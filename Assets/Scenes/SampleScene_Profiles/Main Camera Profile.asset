@@ -1408,7 +1408,7 @@ MonoBehaviour:
     overrideState: 1
     value: 4
   anamorphicRatio:
-    overrideState: 1
+    overrideState: 0
     value: 0.747
   color:
     overrideState: 0
