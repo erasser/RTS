@@ -4,7 +4,7 @@ using Random = UnityEngine.Random;
 
 public class Unit : MonoBehaviour
 {
-    public static bool touchedGround;
+    public static bool touchedGround = true;
     public Rigidbody rb;
     [Range(1, 400)]
     public int speed = 9;
@@ -14,6 +14,7 @@ public class Unit : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        rb.centerOfMass = Vector3.down * .1f;
         _target = GameObject.Find("target");
         Time.timeScale = 1f;
         _camera3rdPerson = GameObject.Find("Camera3rdPerson");
@@ -44,19 +45,23 @@ public class Unit : MonoBehaviour
         
         
         var toTargetV3 = _target.transform.position - transform.position;
-        // var toTargetV2 = new Vector2(toTargetV3.x, toTargetV3.z);
-        // var tankForwardV2 = new Vector2(transform.right.x, transform.right.z);  // It's 'right' to correctly get negative or positive value
+        var toTargetV2 = new Vector2(toTargetV3.x, toTargetV3.z);
+        var tankForwardV2 = new Vector2(transform.right.x, transform.right.z);  // It's 'right' to correctly get negative or positive value
 
-        // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, transform.up) / 10;  // I'm not sure about rotation axis
-        var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, Vector3.up) / 10;  // I'm not sure about rotation axis
+        var tankForwardFlattenedV3 = new Vector3(transform.forward.x, 0, transform.forward.z);
+        
+        // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, transform.up) / 4;  // I'm not sure about rotation axis
+        // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, Vector3.up) / 4;  // I'm not sure about rotation axis
+        var coefficient = Vector3.SignedAngle(tankForwardFlattenedV3, toTargetV3, Vector3.up) * .3f;  // I'm not sure about rotation axis
+        // var coefficient = Vector2.SignedAngle(tankForwardV2, toTargetV2) / 4;  // I'm not sure about rotation axis
         
         // TODO: ► Check also cross product, it involves and angle
-        
-        coefficient = Math.Clamp(coefficient, -4, 4);
-        
-        if (Mathf.Abs(coefficient) < .5f) return;
 
-        rb.AddTorque(transform.up * coefficient, ForceMode.Impulse);  // 400 in Update
+        coefficient = Math.Clamp(coefficient, -20, 20);
+        
+        if (Mathf.Abs(coefficient) < .8f) return;
+
+        rb.AddTorque(transform.up * coefficient, ForceMode.Impulse);
         // rb.transform.Rotate(Vector3.up * coefficient);  // TODO: What if collision will occur? - It seems good
         // rb.transform.Rotate(transform.up * coefficient);  // seká se
 
