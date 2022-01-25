@@ -52,16 +52,18 @@ public class Unit : MonoBehaviour
         
         // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, transform.up) / 4;  // I'm not sure about rotation axis
         // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, Vector3.up) / 4;  // I'm not sure about rotation axis
-        var coefficient = Vector3.SignedAngle(tankForwardFlattenedV3, toTargetV3, Vector3.up) * .3f;  // I'm not sure about rotation axis
+        var angleCoefficient = Vector3.SignedAngle(tankForwardFlattenedV3, toTargetV3, Vector3.up);  // I'm not sure about rotation axis
         // var coefficient = Vector2.SignedAngle(tankForwardV2, toTargetV2) / 4;  // I'm not sure about rotation axis
-        
+
         // TODO: ► Check also cross product, it involves and angle
 
-        coefficient = Math.Clamp(coefficient, -20, 20);
-        
-        if (Mathf.Abs(coefficient) < .8f) return;
+        angleCoefficient = Math.Clamp(angleCoefficient, -60, 60);
 
-        rb.AddTorque(transform.up * coefficient, ForceMode.Impulse);
+        // if (Mathf.Abs(coefficient) < 1) return;
+
+        angleCoefficient *= .3f;
+
+        rb.AddTorque(transform.up * angleCoefficient, ForceMode.Impulse);
         // rb.transform.Rotate(Vector3.up * coefficient);  // TODO: What if collision will occur? - It seems good
         // rb.transform.Rotate(transform.up * coefficient);  // seká se
 
