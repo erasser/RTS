@@ -1,26 +1,45 @@
+using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class GameController : MonoBehaviour
 {
+    public GameObject tankPrefab;
+    public GameObject targetPrefab;
+    public Texture2D mouseCursorMove;
+    public LayerMask groundLayer;  // Used to determine if a unit is on the ground
     public static GameController instance;
     static GameObject _camera;
     static Camera _cameraComponent;
-    static Vector3 _cameraOffset = new(2, 3, -2);
-    public static GameObject selectedObject;
+    static readonly Vector3 CameraOffset = new(3, 4, -3);
+    static GameObject _selectedObject;
     static Unit _selectedObjectUnitComponent;
-    public LayerMask groundLayer;  // Used to determine if a unit is on the ground
+    static bool _moveUnit;
+
+    // enum PlayerState
+    // {
+    //     MoveUnit
+    // }
+
+    private void Awake()
+    {
+        instance = this;
+    }
 
     void Start()
     {
-        instance = this;
         _camera = GameObject.Find("Camera");
         _cameraComponent = _camera.GetComponent<Camera>();
-        SelectObject(GameObject.Find("Tank"));
+
+        GameObject.Find("buttonMove").GetComponent<Button>().onClick.AddListener(ProcessMoveButton);
+        
+        Unit.GenerateSomeUnits();
     }
 
     void Update()
     {
-        CheckTouch();
+        ProcessTouch();
 
         // if (Input.GetKey(KeyCode.A))
         // {
@@ -29,19 +48,38 @@ public class GameController : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!selectedObject) return;  // TODO: Remove
+        if (!_selectedObject) return;  // TODO: Remove
         
-        _camera.transform.position = selectedObject.transform.position + _cameraOffset;
-        _camera.transform.LookAt(selectedObject.transform);
+        _camera.transform.position = _selectedObject.transform.position + CameraOffset;
+        _camera.transform.LookAt(_selectedObject.transform);
     }
     
-    void CheckTouch()
+    void ProcessTouch()
     {
-        if (Input.GetMouseButtonDown(0) &&
-            Physics.Raycast(_cameraComponent.ScreenPointToRay(Input.mousePosition), out RaycastHit selectionHit, 1000 /*, selectableObjectsLayer*/))
+        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() &&
+            Physics.Raycast(_cameraComponent.ScreenPointToRay(Input.mousePosition), out RaycastHit selectionHit))
         {
-            if (selectionHit.collider.CompareTag("Unit"))
+            var unitTouched = selectionHit.collider.CompareTag("Unit");
+
+            /*  Move unit  */
+            if (_moveUnit)
+            {
+                if (unitTouched)
+                    _selectedObjectUnitComponent.SetTarget(selectionHit.collider.gameObject);
+                else
+                    _selectedObjectUnitComponent.SetTarget(selectionHit.point);
+
+                // TODO: Redundant code, create a method.
+                Cursor.SetCursor(null, Vector2.zero, CursorMode.ForceSoftware);
+                _moveUnit = false;
+                return;
+            }
+
+            /*  Select / unselect unit  */
+            if (unitTouched)
+            {
                 SelectObject(selectionHit.collider.gameObject);
+            }
             else
                 UnselectObject();
         }
@@ -49,19 +87,32 @@ public class GameController : MonoBehaviour
 
     void SelectObject(GameObject obj)
     {
-        if (Equals(selectedObject, obj)) return;
+        if (Equals(_selectedObject, obj)) return;
 
-        selectedObject = obj;
-        _selectedObjectUnitComponent = selectedObject.GetComponent<Unit>();
+        UnselectObject();
+
+        _selectedObject = obj;
+        _selectedObjectUnitComponent = _selectedObject.GetComponent<Unit>();
         _selectedObjectUnitComponent.ToggleOutline(true);
     }
 
     void UnselectObject()
     {
-        if (!selectedObject) return;
+        if (!_selectedObject) return;
 
         _selectedObjectUnitComponent.ToggleOutline(false);
-        selectedObject = null;
+        _selectedObject = null;
         _selectedObjectUnitComponent = null;
+        _moveUnit = false;
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.ForceSoftware);
+    }
+
+    void ProcessMoveButton()
+    {
+        if (!_selectedObject) return;
+
+        _moveUnit = true;
+        
+        Cursor.SetCursor(mouseCursorMove, new Vector2(32, 32), CursorMode.ForceSoftware);
     }
 }

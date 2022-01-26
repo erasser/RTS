@@ -1,11 +1,21 @@
-using System;
 using UnityEngine;
+
+// I'm not going to use this. Raycaster should be more performant.
+
+// TODO: Cache gameObject.GetComponent<Unit>() if this approach is used. It could be cached in Unis.cs.
 
 public class Ground : MonoBehaviour
 {
-    void OnCollisionStay(Collision other)
+    // Zde jsem skončil - wheel collider does not cause collision?
+    
+    void OnCollisionEnter(Collision other)
     {
-        // print("Collision!");
-        var a = 1;
+        print("collision");
+        other.collider.gameObject.GetComponent<Unit>().SetIsOnGround(true);
+    }
+
+    void OnCollisionExit(Collision other)
+    {
+        other.collider.gameObject.GetComponent<Unit>().SetIsOnGround(false);
     }
 }
