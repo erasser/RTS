@@ -15,16 +15,15 @@ public class Unit : MonoBehaviour
     GameObject _targetDummy;
     GameObject _camera3rdPerson;
     public List<Outline> outlineComponents = new();
-    float _initialDrag;  // 5 is fine
+    float _initialDrag;         //  5 is fine
     float _initialAngularDrag;  // 10 is fine
 
     void Awake()
     {
         _rb = GetComponent<Rigidbody>();
-        // _rb.centerOfMass = Vector3.down * .1f;
-        _rb.centerOfMass = new Vector3(0, -.1f, .2f);
+        _rb.centerOfMass = Vector3.down * .1f;
+        // _rb.centerOfMass = new Vector3(0, -.1f, .1f);
         // _target = GameObject.Find("target");
-        Time.timeScale = 1f;
         _camera3rdPerson = GameObject.Find("Camera3rdPerson");
         _initialDrag = _rb.drag;
         _initialAngularDrag = _rb.angularDrag;
@@ -70,13 +69,20 @@ public class Unit : MonoBehaviour
         ////  • option 1: Use Vector2.SignedAngle() & Rotate(Vector3.up)
         ////  • option 2: Use Vector3.SignedAngle() & Rotate(transform.up)  -> should be this IMHO (this is used now)
 
-        if ((_target.transform.position - transform.position).sqrMagnitude < 3)  // target reached
+        var toTargetSqrMagnitude = (_target.transform.position - transform.position).sqrMagnitude;
+        
+        if (toTargetSqrMagnitude < 1)  // target reached
         {
             UnsetTarget();
             return;
         }
 
-        _rb.AddForce(transform.forward * speed, ForceMode.Impulse);
+        // Slow when near to target
+        var speedCoefficient = 1f;
+        if (toTargetSqrMagnitude < 6)
+            speedCoefficient = toTargetSqrMagnitude / 6;
+
+        _rb.AddForce(transform.forward * speed * speedCoefficient, ForceMode.Impulse);
 
         var toTargetV3 = _target.transform.position - transform.position;
         toTargetV3 = new Vector3(toTargetV3.x, 0, toTargetV3.z);

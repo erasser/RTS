@@ -1,3 +1,5 @@
-﻿Slow when near to target
+﻿Prevent unit to slide from slope when should stand still
 
 Move unit, if it's standing on another unit \m/
+
+If a target is close & back to the unit, maybe the unit could just go back a little
