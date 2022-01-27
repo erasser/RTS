@@ -50,8 +50,8 @@ public class GameController : MonoBehaviour
     {
         if (!_selectedObject) return;  // TODO: Remove
         
-        _camera.transform.position = _selectedObject.transform.position + CameraOffset;
-        _camera.transform.LookAt(_selectedObject.transform);
+        // _camera.transform.position = _selectedObject.transform.position + CameraOffset;
+        // _camera.transform.LookAt(_selectedObject.transform);
     }
     
     void ProcessTouch()

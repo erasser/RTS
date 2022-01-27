@@ -15,8 +15,8 @@ public class Unit : MonoBehaviour
     GameObject _targetDummy;
     GameObject _camera3rdPerson;
     public List<Outline> outlineComponents = new();
-    float _initialDrag;         //  5 is fine
-    float _initialAngularDrag;  // 10 is fine
+    float _initialDrag;         // 5 is fine
+    float _initialAngularDrag;  // 5 is fine (10 before, but it prevented the unit to face a target precisely, the net force was not big enough)
 
     void Awake()
     {
@@ -59,8 +59,6 @@ public class Unit : MonoBehaviour
 
         // TODO: ► FIX: On down slope, unit is heading a bit to right. On up slope, unit is heading a bit to left. 
 
-        // TODO: Slow, if near to the target
-
         // if (touchedGround && rb.velocity.sqrMagnitude < 36)  // TODO: Use instead of drag?
         // {
             // move forward
@@ -84,20 +82,20 @@ public class Unit : MonoBehaviour
 
         _rb.AddForce(transform.forward * speed * speedCoefficient, ForceMode.Impulse);
 
-        var toTargetV3 = _target.transform.position - transform.position;
-        toTargetV3 = new Vector3(toTargetV3.x, 0, toTargetV3.z);
+        var toTargetV3Flattened = _target.transform.position - transform.position;
+        toTargetV3Flattened = new Vector3(toTargetV3Flattened.x, 0, toTargetV3Flattened.z);
 
-        var toTargetV2 = new Vector2(toTargetV3.x, toTargetV3.z);
+        var toTargetV2 = new Vector2(toTargetV3Flattened.x, toTargetV3Flattened.z);
         var tankForwardV2 = new Vector2(transform.right.x, transform.right.z);  // It's 'right' to correctly get negative or positive value
 
         var tankForwardFlattenedV3 = new Vector3(transform.forward.x, 0, transform.forward.z);
 
         // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, transform.up) / 4;  // I'm not sure about rotation axis
         // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, Vector3.up) / 4;  // I'm not sure about rotation axis
-        var angleCoefficient = Vector3.SignedAngle(tankForwardFlattenedV3, toTargetV3, Vector3.up);  // I'm not sure about rotation axis
+        var angleCoefficient = Vector3.SignedAngle(tankForwardFlattenedV3, toTargetV3Flattened, Vector3.up);  // I'm not sure about rotation axis
         // var coefficient = Vector2.SignedAngle(tankForwardV2, toTargetV2) / 4;  // I'm not sure about rotation axis
 
-        // TODO: ► Check also cross product, it involves and angle
+        // TODO: ► Check also cross product, it involves an angle
 
         angleCoefficient = Math.Clamp(angleCoefficient, -60, 60);
 
@@ -116,9 +114,8 @@ public class Unit : MonoBehaviour
 
         // _camera3rdPerson.transform.eulerAngles = new Vector3(0, _camera3rdPerson.transform.eulerAngles.y, 0);
 
-        // Debug.DrawRay(transform.position, transform.forward * 10, Color.yellow);
-        // Debug.DrawRay(transform.position, toTargetV3 * 10, Color.red);
-        // print(angle);
+        // Debug.DrawRay(transform.position, tankForwardFlattenedV3.normalized * 20, Color.yellow);
+        // Debug.DrawRay(transform.position, toTargetV3Flattened.normalized * 20, Color.red);
     }
     
     void SetBottomToCenterDistance()

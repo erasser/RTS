@@ -3,3 +3,5 @@
 Move unit, if it's standing on another unit \m/
 
 If a target is close & back to the unit, maybe the unit could just go back a little
+
+When initiating unit movement, rotate first and then move
