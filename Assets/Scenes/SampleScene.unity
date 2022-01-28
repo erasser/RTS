@@ -248,7 +248,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tankPrefab: {fileID: 8577944341787573137, guid: ac5c46e2f421d034784ef850371b8509,
     type: 3}
-  targetPrefab: {fileID: 3818817189859592337, guid: a16a01883820c6f4a9cb7320de51256e,
+  targetPrefab: {fileID: 867785751905437232, guid: 5fc2702ea3ac09c4487e3bc20791e9b1,
     type: 3}
   mouseCursorMove: {fileID: 2800000, guid: 4390db365d62a9c45a30056d110b0807, type: 3}
   groundLayer:

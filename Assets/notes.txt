@@ -1,6 +1,10 @@
 ﻿Prevent unit to slide from slope when should stand still. - Try to use rigid body position constraint? It could be turned off on collision.
 
-Continue to move forward a bit, if unit stops on another unit, so it stands on the ground at the end. 
+Continue to move forward a bit, if unit stops on another unit, so it stands on the ground at the end.
+
+If a new target if too close, unit doesn't move.
+
+If another unit is close when initiating movement, unit can't turn. Try to solve by pushing the another unit off a bit. 
 
 • Move unit, if it's standing on another unit \m/.
 

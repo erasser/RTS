@@ -19,6 +19,7 @@ public class Unit : MonoBehaviour
     public List<Outline> outlineComponents = new();
     float _initialDrag;         // 5 is fine
     float _initialAngularDrag;  // 5 is fine (10 before, but it prevented the unit to face a target precisely, the net force was not big enough)
+    bool _moveAfterFinishedOnTopOfAnotherUnit;
 
     void Awake()
     {
@@ -72,16 +73,24 @@ public class Unit : MonoBehaviour
         /***  Movement  ***/        
         var toTargetSqrMagnitude = (_target.transform.position - transform.position).sqrMagnitude;
         
-        if (toTargetSqrMagnitude < 1)  // target reached
+        if (toTargetSqrMagnitude < .2f)  // target reached
         {
             UnsetTarget();
+
+            if (_isOnUnit)
+            {
+                // TODO: This is not executing. Maybe it's not needed with a proper collision mesh. Try to make a thorn on top & on the bottom of collision mesh, so unit slides from another one. 
+                // _moveAfterFinishedOnTopOfAnotherUnit = true;
+                _rb.AddForce(transform.forward * speed * 1, ForceMode.Impulse);
+                print("going to ground");
+            }
             return;
         }
 
         // Slow when near to target
         var speedCoefficient = 1f;
-        if (toTargetSqrMagnitude < 6)
-            speedCoefficient = toTargetSqrMagnitude / 6f;  // TODO: Try to make the motion more fluent. Try Sqr or other value to divide by.
+        if (toTargetSqrMagnitude < 4)
+            speedCoefficient = toTargetSqrMagnitude / 4f;  // TODO: Try to make the motion more fluent. Try Sqr or other value to divide by.
 
         _rb.AddForce(transform.forward * speed * speedCoefficient, ForceMode.Impulse);
 
@@ -107,7 +116,7 @@ public class Unit : MonoBehaviour
 
         // Rotate faster when initiating movement  // TODO: Try to rotate without movement. I don't know how to solve it because of wheel colliders.
         if (Math.Abs(angle) > 10)
-            angleCoefficient *= 1.2f;
+            angleCoefficient *= .9f;
         else
             angleCoefficient *= .3f;
 
@@ -141,6 +150,7 @@ public class Unit : MonoBehaviour
         SetIsOnGround(false);
     }
 
+    // TODO: ► What if collides with more that one unit? Maybe use OnCollisionStays() instead.
     private void OnCollisionEnter(Collision other)
     {
         if (other.gameObject.CompareTag("Unit"))
@@ -160,6 +170,7 @@ public class Unit : MonoBehaviour
             print("not on unit!");
             SetIsOnUnit(false);
             speed /= _higherSpeedCoefficient;
+            _moveAfterFinishedOnTopOfAnotherUnit = false;
         }
     }
 
