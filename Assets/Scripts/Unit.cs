@@ -7,8 +7,10 @@ using Random = UnityEngine.Random;
 public class Unit : MonoBehaviour
 {
     [Range(1, 1000)]
-    public int speed = 150;
+    public float speed = 150;
+    static float _higherSpeedCoefficient = 1.3f;
     bool _isOnGround;
+    bool _isOnUnit;
     float _bottomToCenterDistance;  // TODO: Implement for UpdateIsOnGround() method
     Rigidbody _rb;
     GameObject _target;  // TODO: Should be placed on the ground to correctly detect, when the target is reached
@@ -41,7 +43,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeUnits()
     {
-        for (int i = 0; i < 10; ++i)
+        for (int i = 0; i < 2; ++i)
         {
             var tank = Instantiate(GameController.instance.tankPrefab);
             tank.transform.position = new Vector3(Random.value * 10, 1, Random.value * 10);
@@ -55,7 +57,7 @@ public class Unit : MonoBehaviour
 
         UpdateIsOnGround();
 
-        if (!_isOnGround) return;  // TODO: Remove, when units are initially placed on the ground (now they are dropped)
+        if (!_isOnGround && !_isOnUnit) return;  // TODO: Remove, when units are initially placed on the ground (now they are dropped)
 
         // TODO: ► FIX: On down slope, unit is heading a bit to right. On up slope, unit is heading a bit to left. 
 
@@ -67,6 +69,7 @@ public class Unit : MonoBehaviour
         ////  • option 1: Use Vector2.SignedAngle() & Rotate(Vector3.up)
         ////  • option 2: Use Vector3.SignedAngle() & Rotate(transform.up)  -> should be this IMHO (this is used now)
 
+        /***  Movement  ***/        
         var toTargetSqrMagnitude = (_target.transform.position - transform.position).sqrMagnitude;
         
         if (toTargetSqrMagnitude < 1)  // target reached
@@ -78,10 +81,11 @@ public class Unit : MonoBehaviour
         // Slow when near to target
         var speedCoefficient = 1f;
         if (toTargetSqrMagnitude < 6)
-            speedCoefficient = toTargetSqrMagnitude / 6;
+            speedCoefficient = toTargetSqrMagnitude / 6f;  // TODO: Try to make the motion more fluent. Try Sqr or other value to divide by.
 
         _rb.AddForce(transform.forward * speed * speedCoefficient, ForceMode.Impulse);
 
+        /***  Rotation  ***/
         var toTargetV3Flattened = _target.transform.position - transform.position;
         toTargetV3Flattened = new Vector3(toTargetV3Flattened.x, 0, toTargetV3Flattened.z);
 
@@ -92,26 +96,25 @@ public class Unit : MonoBehaviour
 
         // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, transform.up) / 4;  // I'm not sure about rotation axis
         // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, Vector3.up) / 4;  // I'm not sure about rotation axis
-        var angleCoefficient = Vector3.SignedAngle(tankForwardFlattenedV3, toTargetV3Flattened, Vector3.up);  // I'm not sure about rotation axis
+        var angle = Vector3.SignedAngle(tankForwardFlattenedV3, toTargetV3Flattened, Vector3.up);  // I'm not sure about rotation axis
         // var coefficient = Vector2.SignedAngle(tankForwardV2, toTargetV2) / 4;  // I'm not sure about rotation axis
 
         // TODO: ► Check also cross product, it involves an angle
 
-        angleCoefficient = Math.Clamp(angleCoefficient, -60, 60);
+        var angleCoefficient = Math.Clamp(angle, -60, 60);
 
         // if (Mathf.Abs(coefficient) < 1) return;
 
-        angleCoefficient *= .3f;
+        // Rotate faster when initiating movement  // TODO: Try to rotate without movement. I don't know how to solve it because of wheel colliders.
+        if (Math.Abs(angle) > 10)
+            angleCoefficient *= 1.2f;
+        else
+            angleCoefficient *= .3f;
 
         _rb.AddTorque(transform.up * angleCoefficient, ForceMode.Impulse);
         // rb.transform.Rotate(Vector3.up * coefficient);  // TODO: What if collision will occur? - It seems good
         // rb.transform.Rotate(transform.up * coefficient);  // seká se
-
-        // if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out var hit))
-        // {
-        //     hit.normal
-        // }
-
+        
         // _camera3rdPerson.transform.eulerAngles = new Vector3(0, _camera3rdPerson.transform.eulerAngles.y, 0);
 
         // Debug.DrawRay(transform.position, tankForwardFlattenedV3.normalized * 20, Color.yellow);
@@ -138,11 +141,45 @@ public class Unit : MonoBehaviour
         SetIsOnGround(false);
     }
 
+    private void OnCollisionEnter(Collision other)
+    {
+        if (other.gameObject.CompareTag("Unit"))
+        {
+            // other.gameObject.GetComponent<Rigidbody>().mass = 1000;
+            print("on unit!");
+            SetIsOnUnit(true);
+            speed *= _higherSpeedCoefficient;
+        }
+    }
+
+    private void OnCollisionExit(Collision other)
+    {
+        if (other.gameObject.CompareTag("Unit"))
+        {
+            // other.gameObject.GetComponent<Rigidbody>().mass = 300;
+            print("not on unit!");
+            SetIsOnUnit(false);
+            speed /= _higherSpeedCoefficient;
+        }
+    }
+
+    void SetIsOnUnit(bool onUnit)
+    {
+        if (_isOnUnit == onUnit) return;
+
+        ToggleDrags(onUnit);
+    }
+
     public void SetIsOnGround(bool onGround)
     {
         if (_isOnGround == onGround) return;
 
-        if (onGround)
+        ToggleDrags(onGround);
+    }
+
+    void ToggleDrags(bool enable)
+    {
+        if (enable)
         {
             _isOnGround = true;
             _rb.drag = _initialDrag;
@@ -190,11 +227,13 @@ public class Unit : MonoBehaviour
         _target = _targetDummy;
     }
 
-    public void UnsetTarget()
+    void UnsetTarget()
     {
+        // Target is a point in the scene (i.e. unit is not following another unit)
         if (_targetDummy.activeSelf)
+        {
             _targetDummy.SetActive(false);
-
-        _target = null;
+            _target = null;
+        }
     }
 }

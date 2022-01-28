@@ -1,7 +1,9 @@
-﻿Prevent unit to slide from slope when should stand still
+﻿Prevent unit to slide from slope when should stand still. - Try to use rigid body position constraint? It could be turned off on collision.
 
-Move unit, if it's standing on another unit \m/
+Continue to move forward a bit, if unit stops on another unit, so it stands on the ground at the end. 
 
-If a target is close & back to the unit, maybe the unit could just go back a little
+• Move unit, if it's standing on another unit \m/.
 
-When initiating unit movement, rotate first and then move
+• If a target is close & back to the unit, maybe the unit could just go back a little - I decided not to implement this.
+
+• When initiating unit movement, rotate first and then move.
