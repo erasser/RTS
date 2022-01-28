@@ -44,7 +44,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeUnits()
     {
-        for (int i = 0; i < 2; ++i)
+        for (int i = 0; i < 12; ++i)
         {
             var tank = Instantiate(GameController.instance.tankPrefab);
             tank.transform.position = new Vector3(Random.value * 10, 1, Random.value * 10);
@@ -72,8 +72,8 @@ public class Unit : MonoBehaviour
 
         /***  Movement  ***/        
         var toTargetSqrMagnitude = (_target.transform.position - transform.position).sqrMagnitude;
-        
-        if (toTargetSqrMagnitude < .2f)  // target reached
+
+        if (WasTargetReached(toTargetSqrMagnitude))  // target reached
         {
             UnsetTarget();
 
@@ -87,9 +87,9 @@ public class Unit : MonoBehaviour
             return;
         }
 
-        // Slow when near to target
-        var speedCoefficient = 1f;
-        if (toTargetSqrMagnitude < 4)
+        // Slow down when near to target
+        var speedCoefficient = 1f;      // ↓ Don't slow if it's already slow enough
+        if (toTargetSqrMagnitude < 4 && _rb.velocity.sqrMagnitude > 1)
             speedCoefficient = toTargetSqrMagnitude / 4f;  // TODO: Try to make the motion more fluent. Try Sqr or other value to divide by.
 
         _rb.AddForce(transform.forward * speed * speedCoefficient, ForceMode.Impulse);
@@ -128,8 +128,21 @@ public class Unit : MonoBehaviour
 
         // Debug.DrawRay(transform.position, tankForwardFlattenedV3.normalized * 20, Color.yellow);
         // Debug.DrawRay(transform.position, toTargetV3Flattened.normalized * 20, Color.red);
+        // print(_rb.velocity.magnitude);  // With current settings it's 3
     }
-    
+
+    bool WasTargetReached(float toTargetSqrMagnitude)
+    {
+        float distanceLimit;
+
+        if (_target == _targetDummy)    // Target is a point in the scene
+            distanceLimit = .2f;
+        else                            // Target is another unit
+            distanceLimit = 1.1f;
+
+        return toTargetSqrMagnitude < distanceLimit;
+    }
+
     void SetBottomToCenterDistance()
     {
         // _bottomToCenterDistance = GetComponent<MeshFilter>().sharedMesh.bounds.extents.y;  // extents are half of bounds
@@ -151,27 +164,37 @@ public class Unit : MonoBehaviour
     }
 
     // TODO: ► What if collides with more that one unit? Maybe use OnCollisionStays() instead.
-    private void OnCollisionEnter(Collision other)
+    void OnCollisionEnter(Collision other)
     {
         if (other.gameObject.CompareTag("Unit"))
         {
-            // other.gameObject.GetComponent<Rigidbody>().mass = 1000;
-            print("on unit!");
+            // other.gameObject.GetComponent<Rigidbody>().mass = 1000;  // other.rigidbody exists, no need for GetComponent
+            // print("on unit!");
             SetIsOnUnit(true);
             speed *= _higherSpeedCoefficient;
         }
     }
 
-    private void OnCollisionExit(Collision other)
+    void OnCollisionExit(Collision other)
     {
         if (other.gameObject.CompareTag("Unit"))
         {
             // other.gameObject.GetComponent<Rigidbody>().mass = 300;
-            print("not on unit!");
+            // print("not on unit!");
             SetIsOnUnit(false);
             speed /= _higherSpeedCoefficient;
             _moveAfterFinishedOnTopOfAnotherUnit = false;
         }
+    }
+
+    private void OnCollisionStay(Collision other)
+    {
+        // if (other.gameObject.CompareTag("Unit"))
+        // {
+        //     print("Applying another unit push");
+        //     // This will push both colliding units
+        //     other.rigidbody.AddForce((other.rigidbody.position - transform.position).normalized * 200, ForceMode.Impulse);
+        // }
     }
 
     void SetIsOnUnit(bool onUnit)
