@@ -246,9 +246,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c02edb0dad0e596498cabdf0979d3d34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tankPrefab: {fileID: 2668993962370873851, guid: ac5c46e2f421d034784ef850371b8509,
+  tankPrefab: {fileID: 9205119626493813868, guid: 29c8fd632697e3247b018880511353b0,
     type: 3}
-  tankEnemyPrefab: {fileID: 4128120259051376981, guid: ede7f515531e5294e85b978e9ae88269,
+  tankEnemyPrefab: {fileID: 3880956689059877858, guid: ede7f515531e5294e85b978e9ae88269,
     type: 3}
   targetPrefab: {fileID: 867785751905437232, guid: 5fc2702ea3ac09c4487e3bc20791e9b1,
     type: 3}
@@ -270,52 +270,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &344902346
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 344902348}
-  - component: {fileID: 344902347}
-  m_Layer: 0
-  m_Name: _pathFinderHelper
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &344902347
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 344902346}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ca853bb0bb884b4e88cf73991ee02cd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sceneNavmeshData: {fileID: 11400000, guid: 989161ae026c24b45a836056099945b3, type: 2}
-  gameObjectLibrary: []
---- !u!4 &344902348
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 344902346}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &402593354
 GameObject:
@@ -675,7 +629,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   m_LocalRotation: {x: 0.42515883, y: 0.17987402, z: -0.08662266, w: 0.8828261}
-  m_LocalPosition: {x: -5.6401052, y: 16.937515, z: -12.368671}
+  m_LocalPosition: {x: 3.1123192, y: 9.46825, z: -3.445333}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

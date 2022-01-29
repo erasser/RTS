@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using cakeslice;
 using UnityEngine;
+using VolumetricLines;
 using Random = UnityEngine.Random;
+
+// TODO: ► Remove Outline component from enemies
 
 public class Unit : MonoBehaviour
 {
@@ -15,6 +18,7 @@ public class Unit : MonoBehaviour
     Rigidbody _rb;
     GameObject _target;  // TODO: Should be placed on the ground to correctly detect, when the target is reached
     GameObject _targetDummy;
+    public GameObject _targetToShootAt;
     GameObject _camera3rdPerson;
     public List<Outline> outlineComponents = new();
     float _initialDrag;         // 5 is fine
@@ -23,17 +27,23 @@ public class Unit : MonoBehaviour
     static readonly List<GameObject> PlayerUnits = new();
     static readonly List<GameObject> EnemyUnits = new();
     List<GameObject> _hostilesInRange = new();  // For enemy units, player units are hostile. For player units, enemy units are hostile.
+    Transform _cockpitTransform;
+    GameObject _laser;
+    VolumetricLineBehavior _laserComponent;
 
     void Awake()
     {
         _rb = GetComponent<Rigidbody>();
         _rb.centerOfMass = Vector3.down * .1f;
         // _rb.centerOfMass = new Vector3(0, -.1f, .1f);
-        // _target = GameObject.Find("target");
         _camera3rdPerson = GameObject.Find("Camera3rdPerson");
         _initialDrag = _rb.drag;
         _initialAngularDrag = _rb.angularDrag;
         _targetDummy = Instantiate(GameController.instance.targetPrefab);
+        _cockpitTransform = transform.Find("cockpit001");
+        _laser = _cockpitTransform.Find("laser").gameObject;
+        _laserComponent = _laser.GetComponent<VolumetricLineBehavior>();
+        _laser.SetActive(false);
 
         SetOutlineComponents();
 
@@ -42,15 +52,17 @@ public class Unit : MonoBehaviour
 
     void FixedUpdate()  // TODO: Refactor / optimize when it's done. It will be executed heavily
     {
-        MoveToTarget();
-
         if (GameController.fixedFrameCount % 3 == 0)  // Update every nth frame
             UpdateHostilesInRange();
+
+        MoveToTarget();
+
+        UpdateShootLaser();
     }
 
     public static void GenerateSomeUnits()
     {
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < 10; ++i)
         {
             var tank = Instantiate(GameController.instance.tankPrefab);
             tank.transform.position = new Vector3(Random.value * 10, 1, Random.value * 10);
@@ -61,7 +73,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeEnemyUnits()
     {
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < 10; ++i)
         {
             var tankEnemy = Instantiate(GameController.instance.tankEnemyPrefab);
             tankEnemy.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
@@ -292,16 +304,40 @@ public class Unit : MonoBehaviour
     void UpdateHostilesInRange()
     {
         List<GameObject> hostilesList;
-        if (CompareTag("Unit"))
-            hostilesList = EnemyUnits; // TODO: ► Is it really assigned by reference? (try to delete an item to test it)
-        else
-            hostilesList = PlayerUnits;
+        hostilesList = CompareTag("Unit") ? EnemyUnits : PlayerUnits;
 
+        float smallestSqrDistance = 1000000000;
         _hostilesInRange.Clear();
         foreach (var hostile in hostilesList)
-            if ((hostile.transform.position - transform.position).sqrMagnitude < 20)
+        {
+            var sqrDistance = (hostile.transform.position - transform.position).sqrMagnitude;
+            // Fills the list with hostiles in range
+            if (sqrDistance < 20)
             {
                 _hostilesInRange.Add(hostile);
+                
+                // Do this only if unit doesn't have a shoot target, so the current target is not overwritten.
+                if (!_targetToShootAt && sqrDistance < smallestSqrDistance)
+                {
+                    smallestSqrDistance = sqrDistance;
+                    _targetToShootAt = hostile;
+                    _laser.SetActive(true);
+                }
             }
+            else if (hostile == _targetToShootAt)  // Clear shoot target if too far
+            {
+                _targetToShootAt = null;
+                _laser.SetActive(false);
+            }
+        }
+    }
+
+    void UpdateShootLaser()
+    {
+        if (!_targetToShootAt) return;
+
+        var targetPosition = _targetToShootAt.transform.position;
+        _laserComponent.EndPos = Vector3.forward * (targetPosition - transform.position).magnitude; // laser length
+        _cockpitTransform.LookAt(targetPosition); // laser direction
     }
 }
