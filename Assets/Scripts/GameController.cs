@@ -5,6 +5,7 @@ using UnityEngine.UI;
 public class GameController : MonoBehaviour
 {
     public GameObject tankPrefab;
+    public GameObject tankEnemyPrefab;
     public GameObject targetPrefab;
     public Texture2D mouseCursorMove;
     public LayerMask groundLayer;  // Used to determine if a unit is on the ground
@@ -15,7 +16,8 @@ public class GameController : MonoBehaviour
     static GameObject _selectedObject;
     static Unit _selectedObjectUnitComponent;
     static bool _moveUnit;
-
+    public static int fixedFrameCount;
+    RaycastHit _selectionHit;
     // enum PlayerState
     // {
     //     MoveUnit
@@ -34,6 +36,7 @@ public class GameController : MonoBehaviour
         GameObject.Find("buttonMove").GetComponent<Button>().onClick.AddListener(ProcessMoveButton);
         
         Unit.GenerateSomeUnits();
+        Unit.GenerateSomeEnemyUnits();
     }
 
     void Update()
@@ -47,6 +50,8 @@ public class GameController : MonoBehaviour
 
     void FixedUpdate()
     {
+        ++fixedFrameCount;
+
         if (!_selectedObject) return;  // TODO: Remove
         
         // _camera.transform.position = _selectedObject.transform.position + CameraOffset;
@@ -55,18 +60,21 @@ public class GameController : MonoBehaviour
     
     void ProcessTouch()
     {
+        if (Input.GetMouseButtonDown(1))
+            ProcessMoveButton();
+
         if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() &&
-            Physics.Raycast(_cameraComponent.ScreenPointToRay(Input.mousePosition), out RaycastHit selectionHit))
+            Physics.Raycast(_cameraComponent.ScreenPointToRay(Input.mousePosition), out _selectionHit))
         {
-            var unitTouched = selectionHit.collider.CompareTag("Unit");
+            var unitTouched = _selectionHit.collider.CompareTag("Unit");
 
             /*  Move unit  */
             if (_moveUnit)
             {
                 if (unitTouched)
-                    _selectedObjectUnitComponent.SetTarget(selectionHit.collider.gameObject);
+                    _selectedObjectUnitComponent.SetTarget(_selectionHit.collider.gameObject);
                 else
-                    _selectedObjectUnitComponent.SetTarget(selectionHit.point);
+                    _selectedObjectUnitComponent.SetTarget(_selectionHit.point);
 
                 // TODO: Redundant code, create a method.
                 Cursor.SetCursor(null, Vector2.zero, CursorMode.ForceSoftware);
@@ -77,7 +85,7 @@ public class GameController : MonoBehaviour
             /*  Select / unselect unit  */
             if (unitTouched)
             {
-                SelectObject(selectionHit.collider.gameObject);
+                SelectObject(_selectionHit.collider.gameObject);
             }
             else
                 UnselectObject();

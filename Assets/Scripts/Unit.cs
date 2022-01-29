@@ -20,6 +20,9 @@ public class Unit : MonoBehaviour
     float _initialDrag;         // 5 is fine
     float _initialAngularDrag;  // 5 is fine (10 before, but it prevented the unit to face a target precisely, the net force was not big enough)
     bool _moveAfterFinishedOnTopOfAnotherUnit;
+    static readonly List<GameObject> PlayerUnits = new();
+    static readonly List<GameObject> EnemyUnits = new();
+    List<GameObject> _hostilesInRange = new();  // For enemy units, player units are hostile. For player units, enemy units are hostile.
 
     void Awake()
     {
@@ -40,15 +43,30 @@ public class Unit : MonoBehaviour
     void FixedUpdate()  // TODO: Refactor / optimize when it's done. It will be executed heavily
     {
         MoveToTarget();
+
+        if (GameController.fixedFrameCount % 3 == 0)  // Update every nth frame
+            UpdateHostilesInRange();
     }
 
     public static void GenerateSomeUnits()
     {
-        for (int i = 0; i < 12; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             var tank = Instantiate(GameController.instance.tankPrefab);
             tank.transform.position = new Vector3(Random.value * 10, 1, Random.value * 10);
             tank.transform.eulerAngles = new Vector3(0, Random.value * 360, 0);
+            PlayerUnits.Add(tank);
+        }
+    }
+
+    public static void GenerateSomeEnemyUnits()
+    {
+        for (int i = 0; i < 1; ++i)
+        {
+            var tankEnemy = Instantiate(GameController.instance.tankEnemyPrefab);
+            tankEnemy.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
+            tankEnemy.transform.eulerAngles = new Vector3(0, Random.value * 360, 0);
+            EnemyUnits.Add(tankEnemy);
         }
     }
     
@@ -87,10 +105,10 @@ public class Unit : MonoBehaviour
             return;
         }
 
-        // Slow down when near to target
+        // Slow down when near to target - Not needed anymore
         var speedCoefficient = 1f;      // ↓ Don't slow if it's already slow enough
-        if (toTargetSqrMagnitude < 4 && _rb.velocity.sqrMagnitude > 1)
-            speedCoefficient = toTargetSqrMagnitude / 4f;  // TODO: Try to make the motion more fluent. Try Sqr or other value to divide by.
+        // if (toTargetSqrMagnitude < 4 && _rb.velocity.sqrMagnitude > 1)
+        //     speedCoefficient = toTargetSqrMagnitude / 4f;  // TODO: Try to make the motion more fluent. Try Sqr or other value to divide by.
 
         _rb.AddForce(transform.forward * speed * speedCoefficient, ForceMode.Impulse);
 
@@ -166,7 +184,7 @@ public class Unit : MonoBehaviour
     // TODO: ► What if collides with more that one unit? Maybe use OnCollisionStays() instead.
     void OnCollisionEnter(Collision other)
     {
-        if (other.gameObject.CompareTag("Unit"))
+        if (other.gameObject.CompareTag("Unit") || other.gameObject.CompareTag("UnitEnemy"))
         {
             // other.gameObject.GetComponent<Rigidbody>().mass = 1000;  // other.rigidbody exists, no need for GetComponent
             // print("on unit!");
@@ -177,7 +195,7 @@ public class Unit : MonoBehaviour
 
     void OnCollisionExit(Collision other)
     {
-        if (other.gameObject.CompareTag("Unit"))
+        if (other.gameObject.CompareTag("Unit") || other.gameObject.CompareTag("UnitEnemy"))
         {
             // other.gameObject.GetComponent<Rigidbody>().mass = 300;
             // print("not on unit!");
@@ -269,5 +287,21 @@ public class Unit : MonoBehaviour
             _targetDummy.SetActive(false);
             _target = null;
         }
+    }
+
+    void UpdateHostilesInRange()
+    {
+        List<GameObject> hostilesList;
+        if (CompareTag("Unit"))
+            hostilesList = EnemyUnits; // TODO: ► Is it really assigned by reference? (try to delete an item to test it)
+        else
+            hostilesList = PlayerUnits;
+
+        _hostilesInRange.Clear();
+        foreach (var hostile in hostilesList)
+            if ((hostile.transform.position - transform.position).sqrMagnitude < 20)
+            {
+                _hostilesInRange.Add(hostile);
+            }
     }
 }
