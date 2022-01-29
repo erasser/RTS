@@ -18,10 +18,6 @@ public class GameController : MonoBehaviour
     static bool _moveUnit;
     public static int fixedFrameCount;
     RaycastHit _selectionHit;
-    // enum PlayerState
-    // {
-    //     MoveUnit
-    // }
 
     private void Awake()
     {
@@ -34,7 +30,8 @@ public class GameController : MonoBehaviour
         _cameraComponent = _camera.GetComponent<Camera>();
 
         GameObject.Find("buttonMove").GetComponent<Button>().onClick.AddListener(ProcessMoveButton);
-        
+
+        GenerateMap();
         Unit.GenerateSomeUnits();
         Unit.GenerateSomeEnemyUnits();
     }
@@ -63,7 +60,7 @@ public class GameController : MonoBehaviour
         if (Input.GetMouseButtonDown(1))
             ProcessMoveButton();
 
-        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() &&
+        if (_moveUnit || Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() &&
             Physics.Raycast(_cameraComponent.ScreenPointToRay(Input.mousePosition), out _selectionHit))
         {
             var unitTouched = _selectionHit.collider.CompareTag("Unit");
@@ -92,6 +89,35 @@ public class GameController : MonoBehaviour
         }
     }
 
+    void GenerateMap()  // Gets texture size from map image UI element rect transform
+    {
+        var mapImage = GameObject.Find("map");
+        var mapSizeV2 = mapImage.GetComponent<RectTransform>().sizeDelta;
+        var mapSize = new Vector2Int((int)mapSizeV2.x, (int)mapSizeV2.y);
+
+        var renderTexture = new RenderTexture(mapSize.x, mapSize.y, 16)
+        {
+            antiAliasing = 2,
+        };
+
+        var cameraMap = new GameObject("cameraThumbnail", typeof(Camera));
+        var cameraMapCameraComponent = cameraMap.GetComponent<Camera>();
+        cameraMapCameraComponent.targetTexture = renderTexture;
+
+        cameraMap.transform.position = Vector3.up * 80;
+        cameraMap.transform.eulerAngles = Vector3.right * 90;
+
+        RenderTexture.active = cameraMapCameraComponent.targetTexture;
+        cameraMapCameraComponent.Render();
+
+        var texture = new Texture2D(mapSize.x, mapSize.y);
+        texture.ReadPixels(new Rect(0, 0, mapSize.x, mapSize.y), 0, 0);  // targetTexture must be assigned before ReadPixels()
+        texture.Apply();
+
+        var sprite = Sprite.Create(texture, new Rect(0, 0, mapSize.x, mapSize.y), Vector2.zero);
+        mapImage.GetComponent<Image>().sprite = sprite;
+    }
+    
     void SelectObject(GameObject obj)
     {
         if (Equals(_selectedObject, obj)) return;
