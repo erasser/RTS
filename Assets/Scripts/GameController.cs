@@ -9,10 +9,15 @@ public class GameController : MonoBehaviour
     public GameObject targetPrefab;
     public Texture2D mouseCursorMove;
     public LayerMask groundLayer;  // Used to determine if a unit is on the ground
+    public Texture mapPlayerTexture;
+    public Texture mapEnemyTexture;
+    Rect _mapEnemyRect = new (0, 0, 4, 4);
+    Vector2Int _mapSize;
+    Vector2Int _mapSizeHalf;
+    Vector2Int _mapRatio;
     public static GameController instance;
     static GameObject _camera;
     static Camera _cameraComponent;
-    static readonly Vector3 CameraOffset = new(3, 4, -3);
     static GameObject _selectedObject;
     static Unit _selectedObjectUnitComponent;
     static bool _moveUnit;
@@ -54,13 +59,38 @@ public class GameController : MonoBehaviour
         // _camera.transform.position = _selectedObject.transform.position + CameraOffset;
         // _camera.transform.LookAt(_selectedObject.transform);
     }
-    
+
+    void OnGUI()
+    {
+        UpdateMap();
+    }
+
+    void UpdateMap()
+    {
+        // TODO: Is this more performant than to have gameObjects? (They could also be rendered each nth frame)
+
+        foreach (var unit in Unit.EnemyUnits)
+            DrawUnitOnMap(unit, mapEnemyTexture);
+
+        foreach (var unit in Unit.PlayerUnits)
+            DrawUnitOnMap(unit, mapPlayerTexture);
+    }
+
+    void DrawUnitOnMap(GameObject unit, Texture texture)  // This could be probably declared in UpdateMap(). IDK if it's not redeclared many times there.
+    {
+        var unitPosition = unit.transform.position;
+        _mapEnemyRect.x = _mapSizeHalf.x + unitPosition.x * _mapRatio.x;    // 100 is map scene dimension
+        _mapEnemyRect.y = _mapSizeHalf.y - unitPosition.z * _mapRatio.y;
+
+        GUI.DrawTexture(_mapEnemyRect, texture);
+    }
+
     void ProcessTouch()
     {
         if (Input.GetMouseButtonDown(1))
             ProcessMoveButton();
 
-        if (_moveUnit || Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() &&
+        if (/*_moveUnit || */ Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() &&
             Physics.Raycast(_cameraComponent.ScreenPointToRay(Input.mousePosition), out _selectionHit))
         {
             var unitTouched = _selectionHit.collider.CompareTag("Unit");
@@ -81,9 +111,7 @@ public class GameController : MonoBehaviour
 
             /*  Select / unselect unit  */
             if (unitTouched)
-            {
                 SelectObject(_selectionHit.collider.gameObject);
-            }
             else
                 UnselectObject();
         }
@@ -93,14 +121,16 @@ public class GameController : MonoBehaviour
     {
         var mapImage = GameObject.Find("map");
         var mapSizeV2 = mapImage.GetComponent<RectTransform>().sizeDelta;
-        var mapSize = new Vector2Int((int)mapSizeV2.x, (int)mapSizeV2.y);
+        _mapSize = new ((int)mapSizeV2.x, (int)mapSizeV2.y);
+        _mapSizeHalf = _mapSize / 2;
+        _mapRatio = _mapSize / 100;
 
-        var renderTexture = new RenderTexture(mapSize.x, mapSize.y, 16)
+        RenderTexture renderTexture = new(_mapSize.x, _mapSize.y, 16)
         {
-            antiAliasing = 2,
+            antiAliasing = 4
         };
 
-        var cameraMap = new GameObject("cameraThumbnail", typeof(Camera));
+        GameObject cameraMap = new("cameraThumbnail", typeof(Camera));
         var cameraMapCameraComponent = cameraMap.GetComponent<Camera>();
         cameraMapCameraComponent.targetTexture = renderTexture;
 
@@ -110,14 +140,14 @@ public class GameController : MonoBehaviour
         RenderTexture.active = cameraMapCameraComponent.targetTexture;
         cameraMapCameraComponent.Render();
 
-        var texture = new Texture2D(mapSize.x, mapSize.y);
-        texture.ReadPixels(new Rect(0, 0, mapSize.x, mapSize.y), 0, 0);  // targetTexture must be assigned before ReadPixels()
+        Texture2D texture = new(_mapSize.x, _mapSize.y);
+        texture.ReadPixels(new Rect(0, 0, _mapSize.x, _mapSize.y), 0, 0);  // targetTexture must be assigned before ReadPixels()
         texture.Apply();
 
-        var sprite = Sprite.Create(texture, new Rect(0, 0, mapSize.x, mapSize.y), Vector2.zero);
+        var sprite = Sprite.Create(texture, new Rect(0, 0, _mapSize.x, _mapSize.y), Vector2.zero);
         mapImage.GetComponent<Image>().sprite = sprite;
     }
-    
+
     void SelectObject(GameObject obj)
     {
         if (Equals(_selectedObject, obj)) return;

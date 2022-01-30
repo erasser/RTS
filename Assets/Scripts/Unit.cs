@@ -24,8 +24,8 @@ public class Unit : MonoBehaviour
     float _initialDrag;         // 5 is fine
     float _initialAngularDrag;  // 5 is fine (10 before, but it prevented the unit to face a target precisely, the net force was not big enough)
     bool _moveAfterFinishedOnTopOfAnotherUnit;
-    static readonly List<GameObject> PlayerUnits = new();
-    static readonly List<GameObject> EnemyUnits = new();
+    public static readonly List<GameObject> PlayerUnits = new();
+    public static readonly List<GameObject> EnemyUnits = new();
     List<GameObject> _hostilesInRange = new();  // For enemy units, player units are hostile. For player units, enemy units are hostile.
     Transform _cockpitTransform;
     GameObject _laser;
@@ -33,6 +33,7 @@ public class Unit : MonoBehaviour
 
     void Awake()
     {
+        new SquareRoot();
         _rb = GetComponent<Rigidbody>();
         _rb.centerOfMass = Vector3.down * .1f;
         // _rb.centerOfMass = new Vector3(0, -.1f, .1f);
@@ -337,7 +338,8 @@ public class Unit : MonoBehaviour
         if (!_targetToShootAt) return;
 
         var targetPosition = _targetToShootAt.transform.position;
-        _laserComponent.EndPos = Vector3.forward * (targetPosition - transform.position).magnitude; // laser length
+        // _laserComponent.EndPos = Vector3.forward * (targetPosition - transform.position).magnitude; // laser length
+        _laserComponent.EndPos = Vector3.forward * SquareRoot.GetValue((targetPosition - transform.position).sqrMagnitude); // laser length
         _cockpitTransform.LookAt(targetPosition); // laser direction
     }
 }

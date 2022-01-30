@@ -1,11 +1,19 @@
-﻿Prevent unit to slide from slope when should stand still. - Try to use rigid body position constraint? It could be turned off on collision.
+﻿Create wepon classes
+
+Prevent unit to slide from slope when should stand still. - Try to use rigid body position constraint? It could be turned off on collision.
 
 Continue to move forward a bit, if unit stops on another unit, so it stands on the ground at the end.
 
 If another unit is close when initiating movement, unit can't turn. Try to solve by pushing the another unit off a bit - nope.
 
 Manage the state, when a unit ends upside down
- 
+
+Laser should not be fired if target is under shooter unit's view horizon.
+
+Automate map generation in:
+    - DrawUnitOnMap() - map dimensions
+    - GenerateMap() - camera position
+
 • If a new target if too close, unit doesn't move.
 
 • Move unit, if it's standing on another unit \m/.
