@@ -256,7 +256,10 @@ MonoBehaviour:
   groundLayer:
     serializedVersion: 2
     m_Bits: 128
-  mapEnemyTexture: {fileID: 0}
+  minimapPlayerImage: {fileID: 2800000, guid: 36e74786fc7865c4d9c29ebc6aebce7f, type: 3}
+  minimapEnemyImage: {fileID: 2800000, guid: 993f74daafd4c1245bb5171ea5ea181a, type: 3}
+  minimapSelectedUnitImage: {fileID: 2800000, guid: 9eaf4d0953d4ca346b53ad9e82d23677,
+    type: 3}
 --- !u!4 &325510806
 Transform:
   m_ObjectHideFlags: 0

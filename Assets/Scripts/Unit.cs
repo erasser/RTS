@@ -33,7 +33,6 @@ public class Unit : MonoBehaviour
 
     void Awake()
     {
-        new SquareRoot();
         _rb = GetComponent<Rigidbody>();
         _rb.centerOfMass = Vector3.down * .1f;
         // _rb.centerOfMass = new Vector3(0, -.1f, .1f);
