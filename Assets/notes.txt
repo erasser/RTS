@@ -1,4 +1,20 @@
-﻿Create wepon classes
+﻿Laser shoots trough ground -> raycast
+
+reset cockpit rotation
+
+click on minimap
+
+unit info billboard
+
+unit cam view
+
+add ufo unit
+
+------------------------------
+
+Solve hotfix nit UpdateCockpitAndCannonRotation()
+
+Create weapon classes
 
 Prevent unit to slide from slope when should stand still. - Try to use rigid body position constraint? It could be turned off on collision.
 

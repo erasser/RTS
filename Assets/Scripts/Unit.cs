@@ -18,7 +18,8 @@ public class Unit : MonoBehaviour
     Rigidbody _rb;
     GameObject _target;  // TODO: Should be placed on the ground to correctly detect, when the target is reached
     GameObject _targetDummy;
-    public GameObject _targetToShootAt;
+    GameObject _targetToShootAt;
+    Vector3 _toShootTargetDirection;
     GameObject _camera3rdPerson;
     public List<Outline> outlineComponents = new();
     float _initialDrag;         // 5 is fine
@@ -28,6 +29,7 @@ public class Unit : MonoBehaviour
     public static readonly List<GameObject> EnemyUnits = new();
     List<GameObject> _hostilesInRange = new();  // For enemy units, player units are hostile. For player units, enemy units are hostile.
     Transform _cockpitTransform;
+    Transform _cannonSocketTransform;
     GameObject _laser;
     VolumetricLineBehavior _laserComponent;
 
@@ -41,7 +43,8 @@ public class Unit : MonoBehaviour
         _initialAngularDrag = _rb.angularDrag;
         _targetDummy = Instantiate(GameController.instance.targetPrefab);
         _cockpitTransform = transform.Find("cockpit001");
-        _laser = _cockpitTransform.Find("laser").gameObject;
+        _cannonSocketTransform = _cockpitTransform.Find("cannonsSockets001");
+        _laser = _cannonSocketTransform.Find("laser").gameObject;
         _laserComponent = _laser.GetComponent<VolumetricLineBehavior>();
         _laser.SetActive(false);
 
@@ -62,7 +65,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeUnits()
     {
-        for (int i = 0; i < 10; ++i)
+        for (int i = 0; i < 8; ++i)
         {
             var tank = Instantiate(GameController.instance.tankPrefab);
             tank.transform.position = new Vector3(Random.value * 10, 1, Random.value * 10);
@@ -73,7 +76,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeEnemyUnits()
     {
-        for (int i = 0; i < 10; ++i)
+        for (int i = 0; i < 8; ++i)
         {
             var tankEnemy = Instantiate(GameController.instance.tankEnemyPrefab);
             tankEnemy.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
@@ -100,9 +103,12 @@ public class Unit : MonoBehaviour
         ////  • option 1: Use Vector2.SignedAngle() & Rotate(Vector3.up)
         ////  • option 2: Use Vector3.SignedAngle() & Rotate(transform.up)  -> should be this IMHO (this is used now)
 
-        /***  Movement  ***/        
-        var toTargetSqrMagnitude = (_target.transform.position - transform.position).sqrMagnitude;
+        var toTargetDirection = _target.transform.position - transform.position;
 
+        /***  Movement  ***/        
+        var toTargetSqrMagnitude = toTargetDirection.sqrMagnitude;
+
+        // TODO: Marge toTargetSqrMagnitude with declaration if "Slow down when near to target" is not used
         if (WasTargetReached(toTargetSqrMagnitude))  // target reached
         {
             UnsetTarget();
@@ -145,10 +151,7 @@ public class Unit : MonoBehaviour
         // if (Mathf.Abs(coefficient) < 1) return;
 
         // Rotate faster when initiating movement  // TODO: Try to rotate without movement. I don't know how to solve it because of wheel colliders.
-        if (Math.Abs(angle) > 10)
-            angleCoefficient *= .9f;
-        else
-            angleCoefficient *= .3f;
+        angleCoefficient *= Math.Abs(angle) > 10 ? .9f : .3f;
 
         _rb.AddTorque(transform.up * angleCoefficient, ForceMode.Impulse);
         // rb.transform.Rotate(Vector3.up * coefficient);  // TODO: What if collision will occur? - It seems good
@@ -163,12 +166,7 @@ public class Unit : MonoBehaviour
 
     bool WasTargetReached(float toTargetSqrMagnitude)
     {
-        float distanceLimit;
-
-        if (_target == _targetDummy)    // Target is a point in the scene
-            distanceLimit = .2f;
-        else                            // Target is another unit
-            distanceLimit = 1.1f;
+        var distanceLimit = _target == _targetDummy ? .2f : 1.1f;
 
         return toTargetSqrMagnitude < distanceLimit;
     }
@@ -193,6 +191,7 @@ public class Unit : MonoBehaviour
         SetIsOnGround(false);
     }
 
+    // Not used
     // TODO: ► What if collides with more that one unit? Maybe use OnCollisionStays() instead.
     void OnCollisionEnter(Collision other)
     {
@@ -205,6 +204,7 @@ public class Unit : MonoBehaviour
         }
     }
 
+    // Not used
     void OnCollisionExit(Collision other)
     {
         if (other.gameObject.CompareTag("Unit") || other.gameObject.CompareTag("UnitEnemy"))
@@ -332,13 +332,58 @@ public class Unit : MonoBehaviour
         }
     }
 
+    void UpdateCockpitAndCannonRotation()
+    {
+        // if (!_targetToShootAt) return;
+        
+
+        var lookAtRotation = Quaternion.LookRotation(_toShootTargetDirection);
+
+        // TODO: The slerp is faster with higher angle. Fix it to linear behavior.
+        var lookAtQuaternionCockpit = Quaternion.Slerp(_cockpitTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 8);
+        var lookAtQuaternionCannon = Quaternion.Slerp(_cannonSocketTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 8);
+        // var lookAtQuaternion2 = Quaternion.Slerp(_cockpitTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 6);
+
+        _cockpitTransform.eulerAngles = new Vector3(_cockpitTransform.eulerAngles.x, lookAtQuaternionCockpit.eulerAngles.y, _cockpitTransform.eulerAngles.z);
+
+        // TODO: This is a hotfix, because the cockpit also gets x & z rotation from above line >:-(
+        _cockpitTransform.localEulerAngles = new Vector3(0, _cockpitTransform.localEulerAngles.y, 0);
+
+        _cannonSocketTransform.eulerAngles = new Vector3(lookAtQuaternionCannon.eulerAngles.x,_cannonSocketTransform.eulerAngles.y,_cannonSocketTransform.eulerAngles.z);
+
+/*        var cockpitRotation = lookAtQuaternion;
+        cockpitRotation.x = 0;
+        cockpitRotation.z = 0;
+        cockpitRotation.Normalize();
+
+        // // var cannonSocketRotation = lookAtQuaternion2;
+        // // cannonSocketRotation.x = Mathf.Abs(cannonSocketRotation.x);  // TODO: Allow slight down rotation
+        // // cannonSocketRotation.y = 0;
+        // // cannonSocketRotation.z = 0;
+        // // cannonSocketRotation.Normalize();
+        // _cannonSocketTransform.rotation = cannonSocketRotation;
+        // _cannonSocketTransform.eulerAngles = Vector3.right * lookAtQuaternion.eulerAngles.x;
+        _cannonSocketTransform.eulerAngles = new Vector3(45,0,0);
+        print(_cannonSocketTransform.localEulerAngles);
+        
+        // var euler = cockpitRotation.eulerAngles;
+
+        // euler.x = 0;  // z is already 0
+
+        // _cockpitTransform.eulerAngles = euler;
+        _cockpitTransform.rotation = cockpitRotation;  // It's not localRotation, because LookAt() is in world coordinates
+*/
+
+        // _cockpitTransform.LookAt(_targetToShootAt.transform.position);  // Instant look at
+    }
+    
     void UpdateShootLaser()
     {
         if (!_targetToShootAt) return;
 
-        var targetPosition = _targetToShootAt.transform.position;
-        // _laserComponent.EndPos = Vector3.forward * (targetPosition - transform.position).magnitude; // laser length
-        _laserComponent.EndPos = Vector3.forward * SquareRoot.GetValue((targetPosition - transform.position).sqrMagnitude); // laser length
-        _cockpitTransform.LookAt(targetPosition); // laser direction
+        _toShootTargetDirection = _targetToShootAt.transform.position - _cockpitTransform.position + Vector3.up * .08f;
+
+        UpdateCockpitAndCannonRotation();
+        _laserComponent.EndPos = Vector3.forward * SquareRoot.GetValue(_toShootTargetDirection.sqrMagnitude); // laser length
     }
 }
