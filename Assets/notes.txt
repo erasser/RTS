@@ -1,4 +1,6 @@
-﻿Laser shoots trough ground -> raycast
+﻿• Turn laser on after it's aimed by canon
+
+Test if raycast against ground & hostile units in UpdateShootLaser() works (against hostile units it's tested)
 
 reset cockpit rotation
 

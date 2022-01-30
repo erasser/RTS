@@ -248,7 +248,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tankPrefab: {fileID: 2412489413846082620, guid: f0b20fdd71b7c1a4294b8e0b51641a85,
     type: 3}
-  tankEnemyPrefab: {fileID: 3880956689059877858, guid: ede7f515531e5294e85b978e9ae88269,
+  tankEnemyPrefab: {fileID: 2412489413846082620, guid: 23e15420ebccb1c4fa2a84de43a57f75,
     type: 3}
   targetPrefab: {fileID: 867785751905437232, guid: 5fc2702ea3ac09c4487e3bc20791e9b1,
     type: 3}

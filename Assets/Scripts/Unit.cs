@@ -65,7 +65,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeUnits()
     {
-        for (int i = 0; i < 8; ++i)
+        for (int i = 0; i < 2; ++i)
         {
             var tank = Instantiate(GameController.instance.tankPrefab);
             tank.transform.position = new Vector3(Random.value * 10, 1, Random.value * 10);
@@ -76,7 +76,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeEnemyUnits()
     {
-        for (int i = 0; i < 8; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             var tankEnemy = Instantiate(GameController.instance.tankEnemyPrefab);
             tankEnemy.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
@@ -141,7 +141,7 @@ public class Unit : MonoBehaviour
 
         // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, transform.up) / 4;  // I'm not sure about rotation axis
         // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, Vector3.up) / 4;  // I'm not sure about rotation axis
-        var angle = Vector3.SignedAngle(tankForwardFlattenedV3, toTargetV3Flattened, Vector3.up);  // I'm not sure about rotation axis
+        var angle = Vector3.SignedAngle(tankForwardFlattenedV3, toTargetV3Flattened, Vector3.up);  // The rotation axis is to determine the sign
         // var coefficient = Vector2.SignedAngle(tankForwardV2, toTargetV2) / 4;  // I'm not sure about rotation axis
 
         // TODO: ► Check also cross product, it involves an angle
@@ -321,13 +321,13 @@ public class Unit : MonoBehaviour
                 {
                     smallestSqrDistance = sqrDistance;
                     _targetToShootAt = hostile;
-                    _laser.SetActive(true);
+                    // _laser.SetActive(true);  // Use this if ground raycast is not used in UpdateShootLaser() 
                 }
             }
             else if (hostile == _targetToShootAt)  // Clear shoot target if too far
             {
                 _targetToShootAt = null;
-                _laser.SetActive(false);
+                // _laser.SetActive(false);
             }
         }
     }
@@ -340,16 +340,19 @@ public class Unit : MonoBehaviour
         var lookAtRotation = Quaternion.LookRotation(_toShootTargetDirection);
 
         // TODO: The slerp is faster with higher angle. Fix it to linear behavior.
-        var lookAtQuaternionCockpit = Quaternion.Slerp(_cockpitTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 8);
-        var lookAtQuaternionCannon = Quaternion.Slerp(_cannonSocketTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 8);
+        var lookAtQuaternionCockpit = Quaternion.Slerp(_cockpitTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 16);
+        var lookAtQuaternionCannon = Quaternion.Slerp(_cannonSocketTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 16);
         // var lookAtQuaternion2 = Quaternion.Slerp(_cockpitTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 6);
 
-        _cockpitTransform.eulerAngles = new Vector3(_cockpitTransform.eulerAngles.x, lookAtQuaternionCockpit.eulerAngles.y, _cockpitTransform.eulerAngles.z);
+        _cockpitTransform.eulerAngles = new(_cockpitTransform.eulerAngles.x, lookAtQuaternionCockpit.eulerAngles.y, _cockpitTransform.eulerAngles.z);
 
         // TODO: This is a hotfix, because the cockpit also gets x & z rotation from above line >:-(
-        _cockpitTransform.localEulerAngles = new Vector3(0, _cockpitTransform.localEulerAngles.y, 0);
+        _cockpitTransform.localEulerAngles = new(0, _cockpitTransform.localEulerAngles.y, 0);
 
-        _cannonSocketTransform.eulerAngles = new Vector3(lookAtQuaternionCannon.eulerAngles.x,_cannonSocketTransform.eulerAngles.y,_cannonSocketTransform.eulerAngles.z);
+        _cannonSocketTransform.eulerAngles = new(lookAtQuaternionCannon.eulerAngles.x,_cannonSocketTransform.eulerAngles.y,_cannonSocketTransform.eulerAngles.z);
+
+        // TODO: This is a hotfix, because the cockpit also gets x & z rotation from above line >:-(
+        _cannonSocketTransform.localEulerAngles = new(_cannonSocketTransform.localEulerAngles.x, 0, 0);
 
 /*        var cockpitRotation = lookAtQuaternion;
         cockpitRotation.x = 0;
@@ -377,13 +380,46 @@ public class Unit : MonoBehaviour
         // _cockpitTransform.LookAt(_targetToShootAt.transform.position);  // Instant look at
     }
     
-    void UpdateShootLaser()
+    void UpdateShootLaser()  // Manages the direction and enabled state of laser
     {
-        if (!_targetToShootAt) return;
+        if (!_targetToShootAt)
+        {
+            _laser.SetActive(false);
+            return;
+        }
 
         _toShootTargetDirection = _targetToShootAt.transform.position - _cockpitTransform.position + Vector3.up * .08f;
 
         UpdateCockpitAndCannonRotation();
-        _laserComponent.EndPos = Vector3.forward * SquareRoot.GetValue(_toShootTargetDirection.sqrMagnitude); // laser length
+        
+        var angle = Vector3.Angle(_toShootTargetDirection, _cannonSocketTransform.forward);
+        if (angle > 5)
+        {
+            _laser.SetActive(false);
+            return;
+        }
+
+        // TODO: ► If hits hostile non-targeted unit, shorten the laser
+        _laser.SetActive(true);
+        var distance = SquareRoot.GetValue(_toShootTargetDirection.sqrMagnitude);
+        if (Physics.Raycast(_cockpitTransform.position, _toShootTargetDirection, out RaycastHit selectionHit, distance /*, GameController.instance.groundLayer*/))
+        {
+            // A friendly unit or the ground is in laser's way => disable the laser
+            if (IsFriendly(selectionHit.collider.gameObject) /*&& selectionHit.collider.gameObject != _targetToShootAt*/ ||
+                selectionHit.collider.name == "ground")
+                _laser.SetActive(false);
+            // else
+            //     _laser.SetActive(true);
+        }
+        // else
+        //     _laser.SetActive(true);
+
+        _laserComponent.EndPos = Vector3.forward * distance; // laser length
+    }
+
+    bool IsFriendly(GameObject unit)
+    {
+        // return CompareTag("Unit") && unit.CompareTag("UnitEnemy") || CompareTag("UnitEnemy") && unit.CompareTag("Unit");  // hostile logic
+        return CompareTag(unit.tag);
     }
 }
