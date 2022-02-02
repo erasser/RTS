@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -13,7 +14,7 @@ public class GameController : MonoBehaviour
     public Texture minimapEnemyImage;
     public Texture minimapSelectedUnitImage;
     public static GameController instance;
-    static GameObject _camera;
+    public static GameObject mainCamera;
     static Camera _cameraComponent;
     public static GameObject selectedObject;
     static Unit _selectedObjectUnitComponent;
@@ -29,10 +30,11 @@ public class GameController : MonoBehaviour
 
     void Start()
     {
-        _camera = GameObject.Find("Camera");
-        _cameraComponent = _camera.GetComponent<Camera>();
+        mainCamera = GameObject.Find("Camera");
+        _cameraComponent = mainCamera.GetComponent<Camera>();
 
         GameObject.Find("buttonMove").GetComponent<Button>().onClick.AddListener(ProcessMoveButton);
+        GameObject.Find("map").GetComponent<Button>().onClick.AddListener(MiniMap.ProcessTouch);
 
         MiniMap.Create();
         Unit.GenerateSomeUnits();

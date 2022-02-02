@@ -4,17 +4,24 @@ using UnityEngine.UI;
 public class MiniMap
 {
     static Rect _mapEnemyRect = new (0, 0, 4, 4);  // TODO: Images are resampled. Make them equal this size.
+    static Vector2 _worldSize;
+    // TODO: Consider if the following should be int or float
     static Vector2Int _mapSize;
     static Vector2Int _mapSizeHalf;
-    static Vector2Int _mapRatio;
+    static Vector2Int _mapRatio;  // Ratio of minimap size / world size
+    static GameObject _cameraViewRect;
 
     public static void Create()  // Gets texture size from map image UI element rect transform
     {
         var mapImage = GameObject.Find("map");
-        var mapSizeV2 = mapImage.GetComponent<RectTransform>().sizeDelta;
+        var mapSizeV2 = mapImage.GetComponent<RectTransform>().sizeDelta;  // Size set in editor
+        // var mapSizeV2 = mapImage.GetComponent<RectTransform>().rect;
+        Debug.Log(mapSizeV2);
+        _cameraViewRect = GameObject.Find("cameraViewRect");
+        _worldSize = new (100, 100);  // TODO: Get dynamically from mesh
         _mapSize = new ((int)mapSizeV2.x, (int)mapSizeV2.y);
         _mapSizeHalf = _mapSize / 2;
-        _mapRatio = _mapSize / 100;
+        _mapRatio = new ((int)(_mapSize.x / _worldSize.x), (int)(_mapSize.y / _worldSize.y));
 
         RenderTexture renderTexture = new(_mapSize.x, _mapSize.y, 16)
         {
@@ -54,9 +61,29 @@ public class MiniMap
     static void DrawUnitOnMap(GameObject unit, Texture texture)  // This could be probably declared in UpdateMap(). IDK if it's not redeclared many times there.
     {
         var unitPosition = unit.transform.position;
-        _mapEnemyRect.x = _mapSizeHalf.x + unitPosition.x * _mapRatio.x;    // 100 is map scene dimension
+        _mapEnemyRect.x = _mapSizeHalf.x + unitPosition.x * _mapRatio.x;
         _mapEnemyRect.y = _mapSizeHalf.y - unitPosition.z * _mapRatio.y;
 
         GUI.DrawTexture(_mapEnemyRect, texture);
+    }
+
+    // TODO: ► Implement orbit camera (from Car project)
+    public static void ProcessTouch()
+    {
+        Vector2 pointerCoords = new(Input.mousePosition.x - 2, Screen.height - Input.mousePosition.y - 2);  // TODO: or +2 in y?
+        // Vector2 worldCoords = new(pointerCoords.x / _mapRatio.x - _mapSize.x / 2, -(pointerCoords.y / _mapRatio.y - _mapSize.y / 2));
+        Vector2 worldCoords = new((pointerCoords.x - _mapSizeHalf.x) * _mapRatio.x, -((pointerCoords.y - _mapSizeHalf.y) * _mapRatio.y));
+        // TODO: ►  ↑ Zde jsem skončil, vyjasnit si násobení / dělení _mapRatio
+
+        var cameraPosition = GameController.mainCamera.transform.position;
+        cameraPosition.x = worldCoords.x;
+        cameraPosition.z = worldCoords.y;
+        GameController.mainCamera.transform.position = cameraPosition;
+
+        var cameraViewRectTransform = _cameraViewRect.GetComponent<RectTransform>();
+        cameraViewRectTransform.transform.position = new Vector3(pointerCoords.x, Screen.height - pointerCoords.y, 0);
+        Debug.Log(pointerCoords);
+
+
     }
 }
