@@ -1,10 +1,10 @@
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class GameController : MonoBehaviour
 {
+    public static GameController gameController;  // Instance of singleton
     public GameObject tankPrefab;
     public GameObject tankEnemyPrefab;
     public GameObject targetPrefab;
@@ -13,7 +13,6 @@ public class GameController : MonoBehaviour
     public Texture minimapPlayerImage;
     public Texture minimapEnemyImage;
     public Texture minimapSelectedUnitImage;
-    public static GameController instance;
     public static GameObject mainCamera;
     static Camera _cameraComponent;
     public static GameObject selectedObject;
@@ -24,7 +23,7 @@ public class GameController : MonoBehaviour
 
     private void Awake()
     {
-        instance = this;
+        gameController = this;
         new SquareRoot();
     }
 
@@ -126,5 +125,10 @@ public class GameController : MonoBehaviour
         _moveUnit = true;
         
         Cursor.SetCursor(mouseCursorMove, new Vector2(32, 32), CursorMode.ForceSoftware);
+    }
+
+    public static void ProcessDestroy(GameObject obj)
+    {
+        Destroy(obj);
     }
 }

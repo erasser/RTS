@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class MiniMap
+public class MiniMap : MonoBehaviour
 {
     static Rect _mapEnemyRect = new (0, 0, 4, 4);  // TODO: Images are resampled. Make them equal this size.
     static Vector2 _worldSize;
@@ -14,8 +15,9 @@ public class MiniMap
     public static void Create()  // Gets texture size from map image UI element rect transform
     {
         var mapImage = GameObject.Find("map");
-        var mapSizeV2 = mapImage.GetComponent<RectTransform>().sizeDelta;  // Size set in editor
         // var mapSizeV2 = mapImage.GetComponent<RectTransform>().rect;
+        mapImage.GetComponent<RectTransform>().sizeDelta = new Vector2(Screen.width / 8, Screen.width / 8);
+        var mapSizeV2 = mapImage.GetComponent<RectTransform>().sizeDelta;
         Debug.Log(mapSizeV2);
         _cameraViewRect = GameObject.Find("cameraViewRect");
         _worldSize = new (100, 100);  // TODO: Get dynamically from mesh
@@ -46,16 +48,22 @@ public class MiniMap
         mapImage.GetComponent<Image>().sprite = sprite;
     }
 
+    void OnMouseOver()
+    {
+        print("mouse over");
+        // print(EventSystem.current);
+    }
+
     public static void UpdateMap()
     {
         foreach (var unit in Unit.EnemyUnits)
-            DrawUnitOnMap(unit, GameController.instance.minimapEnemyImage);
+            DrawUnitOnMap(unit, GameController.gameController.minimapEnemyImage);
 
         foreach (var unit in Unit.PlayerUnits)
             DrawUnitOnMap(unit,
                 unit == GameController.selectedObject
-                    ? GameController.instance.minimapSelectedUnitImage
-                    : GameController.instance.minimapPlayerImage);
+                    ? GameController.gameController.minimapSelectedUnitImage
+                    : GameController.gameController.minimapPlayerImage);
     }
 
     static void DrawUnitOnMap(GameObject unit, Texture texture)  // This could be probably declared in UpdateMap(). IDK if it's not redeclared many times there.

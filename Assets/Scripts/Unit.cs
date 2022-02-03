@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using cakeslice;
 using UnityEngine;
-using VolumetricLines;
 using Random = UnityEngine.Random;
+using static GameController;
 
 // TODO: ► Remove Outline component from enemies
 
@@ -18,8 +18,8 @@ public class Unit : MonoBehaviour
     Rigidbody _rb;
     GameObject _target;  // TODO: Should be placed on the ground to correctly detect, when the target is reached
     GameObject _targetDummy;
-    GameObject _targetToShootAt;
-    Vector3 _toShootTargetDirection;
+    public GameObject targetToShootAt;
+    public Vector3 toShootTargetDirection;  // Cached, because it's used many times  // TODO: Consider moving to WeaponLaser, if it's used just for laser.
     GameObject _camera3rdPerson;
     public List<Outline> outlineComponents = new();
     float _initialDrag;         // 5 is fine
@@ -28,10 +28,11 @@ public class Unit : MonoBehaviour
     public static readonly List<GameObject> PlayerUnits = new();
     public static readonly List<GameObject> EnemyUnits = new();
     List<GameObject> _hostilesInRange = new();  // For enemy units, player units are hostile. For player units, enemy units are hostile.
-    Transform _cockpitTransform;
-    Transform _cannonSocketTransform;
-    GameObject _laser;
-    VolumetricLineBehavior _laserComponent;
+    public Transform cockpitTransform;
+    public Transform cannonSocketTransform;
+    float _armor = 100;
+    float _shield = 100;  // Regenerates over time
+    public WeaponLaser laser;
 
     void Awake()
     {
@@ -41,12 +42,12 @@ public class Unit : MonoBehaviour
         _camera3rdPerson = GameObject.Find("Camera3rdPerson");
         _initialDrag = _rb.drag;
         _initialAngularDrag = _rb.angularDrag;
-        _targetDummy = Instantiate(GameController.instance.targetPrefab);
-        _cockpitTransform = transform.Find("cockpit001");
-        _cannonSocketTransform = _cockpitTransform.Find("cannonsSockets001");
-        _laser = _cannonSocketTransform.Find("laser").gameObject;
-        _laserComponent = _laser.GetComponent<VolumetricLineBehavior>();
-        _laser.SetActive(false);
+        _targetDummy = Instantiate(gameController.targetPrefab);
+        cockpitTransform = transform.Find("cockpit001");
+        cannonSocketTransform = cockpitTransform.Find("cannonsSockets001");
+        /***  Weapons  ***/
+        laser = GetComponent<WeaponLaser>();
+        laser.unit = this;
 
         SetOutlineComponents();
 
@@ -55,19 +56,19 @@ public class Unit : MonoBehaviour
 
     void FixedUpdate()  // TODO: Refactor / optimize when it's done. It will be executed heavily
     {
-        if (GameController.fixedFrameCount % 3 == 0)  // Update every nth frame
+        if (fixedFrameCount % 3 == 0)  // Update every nth frame
             UpdateHostilesInRange();
 
         MoveToTarget();
 
-        UpdateShootLaser();
+        // laser.UpdateLaserProps();
     }
 
     public static void GenerateSomeUnits()
     {
         for (int i = 0; i < 2; ++i)
         {
-            var tank = Instantiate(GameController.instance.tankPrefab);
+            var tank = Instantiate(gameController.tankPrefab);
             tank.transform.position = new Vector3(Random.value * 10, 1, Random.value * 10);
             tank.transform.eulerAngles = new Vector3(0, Random.value * 360, 0);
             PlayerUnits.Add(tank);
@@ -78,7 +79,7 @@ public class Unit : MonoBehaviour
     {
         for (int i = 0; i < 1; ++i)
         {
-            var tankEnemy = Instantiate(GameController.instance.tankEnemyPrefab);
+            var tankEnemy = Instantiate(gameController.tankEnemyPrefab);
             tankEnemy.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
             tankEnemy.transform.eulerAngles = new Vector3(0, Random.value * 360, 0);
             EnemyUnits.Add(tankEnemy);
@@ -178,7 +179,7 @@ public class Unit : MonoBehaviour
     
     void UpdateIsOnGround()
     {
-        if (Physics.Raycast(transform.position, -transform.up, out RaycastHit groundHit, GameController.instance.groundLayer))
+        if (Physics.Raycast(transform.position, -transform.up, out RaycastHit groundHit, gameController.groundLayer))
         {
             if (groundHit.distance < .3f)
             {
@@ -317,42 +318,42 @@ public class Unit : MonoBehaviour
                 _hostilesInRange.Add(hostile);
                 
                 // Do this only if unit doesn't have a shoot target, so the current target is not overwritten.
-                if (!_targetToShootAt && sqrDistance < smallestSqrDistance)
+                if (!targetToShootAt && sqrDistance < smallestSqrDistance)
                 {
                     smallestSqrDistance = sqrDistance;
-                    _targetToShootAt = hostile;
+                    targetToShootAt = hostile;
                     // _laser.SetActive(true);  // Use this if ground raycast is not used in UpdateShootLaser() 
                 }
             }
-            else if (hostile == _targetToShootAt)  // Clear shoot target if too far
+            else if (hostile == targetToShootAt)  // Clear shoot target if too far
             {
-                _targetToShootAt = null;
+                targetToShootAt = null;
                 // _laser.SetActive(false);
             }
         }
     }
 
-    void UpdateCockpitAndCannonRotation()
+    public void UpdateCockpitAndCannonRotation()
     {
         // if (!_targetToShootAt) return;
         
 
-        var lookAtRotation = Quaternion.LookRotation(_toShootTargetDirection);
+        var lookAtRotation = Quaternion.LookRotation(toShootTargetDirection);
 
         // TODO: The slerp is faster with higher angle. Fix it to linear behavior.
-        var lookAtQuaternionCockpit = Quaternion.Slerp(_cockpitTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 16);
-        var lookAtQuaternionCannon = Quaternion.Slerp(_cannonSocketTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 16);
+        var lookAtQuaternionCockpit = Quaternion.Slerp(cockpitTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 16);
+        var lookAtQuaternionCannon = Quaternion.Slerp(cannonSocketTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 16);
         // var lookAtQuaternion2 = Quaternion.Slerp(_cockpitTransform.rotation, lookAtRotation, Time.fixedDeltaTime * 6);
 
-        _cockpitTransform.eulerAngles = new(_cockpitTransform.eulerAngles.x, lookAtQuaternionCockpit.eulerAngles.y, _cockpitTransform.eulerAngles.z);
+        cockpitTransform.eulerAngles = new(cockpitTransform.eulerAngles.x, lookAtQuaternionCockpit.eulerAngles.y, cockpitTransform.eulerAngles.z);
 
         // TODO: This is a hotfix, because the cockpit also gets x & z rotation from above line >:-(
-        _cockpitTransform.localEulerAngles = new(0, _cockpitTransform.localEulerAngles.y, 0);
+        cockpitTransform.localEulerAngles = new(0, cockpitTransform.localEulerAngles.y, 0);
 
-        _cannonSocketTransform.eulerAngles = new(lookAtQuaternionCannon.eulerAngles.x,_cannonSocketTransform.eulerAngles.y,_cannonSocketTransform.eulerAngles.z);
+        cannonSocketTransform.eulerAngles = new(lookAtQuaternionCannon.eulerAngles.x,cannonSocketTransform.eulerAngles.y,cannonSocketTransform.eulerAngles.z);
 
         // TODO: This is a hotfix, because the cockpit also gets x & z rotation from above line >:-(
-        _cannonSocketTransform.localEulerAngles = new(_cannonSocketTransform.localEulerAngles.x, 0, 0);
+        cannonSocketTransform.localEulerAngles = new(cannonSocketTransform.localEulerAngles.x, 0, 0);
 
 /*        var cockpitRotation = lookAtQuaternion;
         cockpitRotation.x = 0;
@@ -379,47 +380,36 @@ public class Unit : MonoBehaviour
 
         // _cockpitTransform.LookAt(_targetToShootAt.transform.position);  // Instant look at
     }
-    
-    void UpdateShootLaser()  // Manages the direction and enabled state of laser
-    {
-        if (!_targetToShootAt)
-        {
-            _laser.SetActive(false);
-            return;
-        }
 
-        _toShootTargetDirection = _targetToShootAt.transform.position - _cockpitTransform.position + Vector3.up * .08f;
-
-        UpdateCockpitAndCannonRotation();
-        
-        var angle = Vector3.Angle(_toShootTargetDirection, _cannonSocketTransform.forward);
-        if (angle > 5)
-        {
-            _laser.SetActive(false);
-            return;
-        }
-
-        // TODO: ► If hits hostile non-targeted unit, shorten the laser
-        _laser.SetActive(true);
-        var distance = SquareRoot.GetValue(_toShootTargetDirection.sqrMagnitude);
-        if (Physics.Raycast(_cockpitTransform.position, _toShootTargetDirection, out RaycastHit selectionHit, distance /*, GameController.instance.groundLayer*/))
-        {
-            // A friendly unit or the ground is in laser's way => disable the laser
-            if (IsFriendly(selectionHit.collider.gameObject) /*&& selectionHit.collider.gameObject != _targetToShootAt*/ ||
-                selectionHit.collider.name == "ground")
-                _laser.SetActive(false);
-            // else
-            //     _laser.SetActive(true);
-        }
-        // else
-        //     _laser.SetActive(true);
-
-        _laserComponent.EndPos = Vector3.forward * distance; // laser length
-    }
-
-    bool IsFriendly(GameObject unit)
+    public bool IsFriendly(GameObject unit)
     {
         // return CompareTag("Unit") && unit.CompareTag("UnitEnemy") || CompareTag("UnitEnemy") && unit.CompareTag("Unit");  // hostile logic
         return CompareTag(unit.tag);
+    }
+
+    void TakeDamage(float damage)
+    {
+        if (_shield > 0)
+        {
+            _shield -= damage; // Apply damage to shield
+
+            if (_shield < 0)
+            {
+                _armor += _shield; // Apply damage to armor, if damage exceeds the shield level (it actually subtract
+                _shield = 0;
+            }
+        }
+        else
+            _armor -= damage;
+
+        if (_armor > 0)
+            UpdateStatusBars();
+        else
+            ProcessDestroy(gameObject);
+    }
+
+    void UpdateStatusBars()
+    {
+        
     }
 }

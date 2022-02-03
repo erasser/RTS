@@ -17,6 +17,7 @@ Solve hotfix nit UpdateCockpitAndCannonRotation()
 Create weapon classes
 
 Prevent unit to slide from slope when should stand still. - Try to use rigid body position constraint? It could be turned off on collision.
+    Maybe it's not a problem - try to stop object on a steep slope.
 
 Continue to move forward a bit, if unit stops on another unit, so it stands on the ground at the end.
 
@@ -34,8 +35,9 @@ It would be cool to have minimap as Image element -  now it's button due to clic
 
 TEST PERFORMANCE
 ════════════════
+- InvokeRepeating vs. Coroutines vs. custom solution (time tracking) - https://forum.unity.com/threads/invokerepeating-vs-coroutines-performance.497208
 - Raycast
-- Vector3.magnitude vs my SquareRoot.cs from Vector3.sqrMagnitude
+- Vector3.magnitude vs. my SquareRoot.cs from Vector3.sqrMagnitude
 
 • Turn laser on after it's aimed by canon
 • If a new target if too close, unit doesn't move.
