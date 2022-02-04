@@ -1,6 +1,6 @@
 ﻿Test if raycast against ground & hostile units in UpdateShootLaser() works (against hostile units it's tested)
 
-reset cockpit rotation
+reset cockpit rotation & don't allow to turn it downside
 
 click on minimap
 
@@ -17,7 +17,7 @@ Solve hotfix nit UpdateCockpitAndCannonRotation()
 Create weapon classes
 
 Prevent unit to slide from slope when should stand still. - Try to use rigid body position constraint? It could be turned off on collision.
-    Maybe it's not a problem - try to stop object on a steep slope.
+    Maybe it's not a problem - try to stop object on a steep slope. - Ne, je to špatný, klouže to furt dolů.
 
 Continue to move forward a bit, if unit stops on another unit, so it stands on the ground at the end.
 

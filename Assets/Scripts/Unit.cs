@@ -30,9 +30,12 @@ public class Unit : MonoBehaviour
     List<GameObject> _hostilesInRange = new();  // For enemy units, player units are hostile. For player units, enemy units are hostile.
     public Transform cockpitTransform;
     public Transform cannonSocketTransform;
-    float _armor = 100;
-    float _shield = 100;  // Regenerates over time
+    public float armor = 100;
+    public float currentArmor = 100;
+    public float shield = 100;
+    public float currentShield = 100;  // Regenerates over time
     public WeaponLaser laser;
+    HealthBar _healthBar;
 
     void Awake()
     {
@@ -48,6 +51,9 @@ public class Unit : MonoBehaviour
         /***  Weapons  ***/
         laser = GetComponent<WeaponLaser>();
         laser.unit = this;
+        currentArmor = armor;
+        currentShield = shield;
+        _healthBar = gameObject.transform.Find("healthBar").transform.GetComponent<HealthBar>();
 
         SetOutlineComponents();
 
@@ -389,20 +395,20 @@ public class Unit : MonoBehaviour
 
     void TakeDamage(float damage)
     {
-        if (_shield > 0)
+        if (currentShield > 0)
         {
-            _shield -= damage; // Apply damage to shield
+            currentShield -= damage; // Apply damage to shield
 
-            if (_shield < 0)
+            if (currentShield < 0)
             {
-                _armor += _shield; // Apply damage to armor, if damage exceeds the shield level (it actually subtract
-                _shield = 0;
+                currentArmor += currentShield; // Apply damage to armor, if damage exceeds the shield level (this actually subtracts)
+                currentShield = 0;
             }
         }
         else
-            _armor -= damage;
+            currentArmor -= damage;
 
-        if (_armor > 0)
+        if (currentArmor > 0)
             UpdateStatusBars();
         else
             ProcessDestroy(gameObject);
@@ -410,6 +416,6 @@ public class Unit : MonoBehaviour
 
     void UpdateStatusBars()
     {
-        
+        _healthBar.UpdateParams(currentArmor / armor);
     }
 }
