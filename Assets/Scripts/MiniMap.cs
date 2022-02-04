@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using static UnityEngine.GameObject;
+using static UnityEngine.GUI;
 
 public class MiniMap : MonoBehaviour
 {
@@ -14,12 +15,12 @@ public class MiniMap : MonoBehaviour
 
     public static void Create()  // Gets texture size from map image UI element rect transform
     {
-        var mapImage = GameObject.Find("map");
+        var mapImage = Find("map");
         // var mapSizeV2 = mapImage.GetComponent<RectTransform>().rect;
-        mapImage.GetComponent<RectTransform>().sizeDelta = new Vector2(Screen.width / 8, Screen.width / 8);
+        mapImage.GetComponent<RectTransform>().sizeDelta = new (Screen.width / 8, Screen.width / 8);
         var mapSizeV2 = mapImage.GetComponent<RectTransform>().sizeDelta;
         Debug.Log(mapSizeV2);
-        _cameraViewRect = GameObject.Find("cameraViewRect");
+        _cameraViewRect = Find("cameraViewRect");
         _worldSize = new (100, 100);  // TODO: Get dynamically from mesh
         _mapSize = new ((int)mapSizeV2.x, (int)mapSizeV2.y);
         _mapSizeHalf = _mapSize / 2;
@@ -72,7 +73,7 @@ public class MiniMap : MonoBehaviour
         _mapEnemyRect.x = _mapSizeHalf.x + unitPosition.x * _mapRatio.x;
         _mapEnemyRect.y = _mapSizeHalf.y - unitPosition.z * _mapRatio.y;
 
-        GUI.DrawTexture(_mapEnemyRect, texture);
+        DrawTexture(_mapEnemyRect, texture);
     }
 
     // TODO: ► Implement orbit camera (from Car project)

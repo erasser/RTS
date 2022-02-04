@@ -12,12 +12,13 @@ public class Unit : MonoBehaviour
     [Range(1, 1000)]
     public float speed = 150;
     static float _higherSpeedCoefficient = 1.3f;
+    static int _hostileSqrDistanceLimit = 20;
     bool _isOnGround;
     bool _isOnUnit;
     float _bottomToCenterDistance;  // TODO: Implement for UpdateIsOnGround() method
     Rigidbody _rb;
     GameObject _target;  // TODO: Should be placed on the ground to correctly detect, when the target is reached
-    GameObject _targetDummy;
+    public GameObject targetDummy;
     public GameObject targetToShootAt;
     public Vector3 toShootTargetDirection;  // Cached, because it's used many times  // TODO: Consider moving to WeaponLaser, if it's used just for laser.
     GameObject _camera3rdPerson;
@@ -31,31 +32,33 @@ public class Unit : MonoBehaviour
     public Transform cockpitTransform;
     public Transform cannonSocketTransform;
     public float armor = 100;
-    public float currentArmor = 100;
+    public float currentArmor;
     public float shield = 100;
-    public float currentShield = 100;  // Regenerates over time
+    public float currentShield;  // Regenerates over time
     public WeaponLaser laser;
     Transform _statusInfoTransform;
     HealthBar _armorBar;
     HealthBar _shieldBar;
+    Transform _thisTransform;  // Cached transform of this
 
     void Awake()
     {
+        _thisTransform = transform;
         _rb = GetComponent<Rigidbody>();
         _rb.centerOfMass = Vector3.down * .1f;
         // _rb.centerOfMass = new Vector3(0, -.1f, .1f);
         _camera3rdPerson = GameObject.Find("Camera3rdPerson");
         _initialDrag = _rb.drag;
         _initialAngularDrag = _rb.angularDrag;
-        _targetDummy = Instantiate(gameController.targetPrefab);
-        cockpitTransform = transform.Find("cockpit001");
+        targetDummy = Instantiate(gameController.targetPrefab);
+        cockpitTransform = _thisTransform.Find("cockpit001");
         cannonSocketTransform = cockpitTransform.Find("cannonsSockets001");
         /***  Weapons  ***/
         laser = GetComponent<WeaponLaser>();
         laser.unit = this;
         currentArmor = armor;
         currentShield = shield;
-        _statusInfoTransform = transform.Find("UnitStatus").transform;
+        _statusInfoTransform = _thisTransform.Find("UnitStatus").transform;
         _armorBar = _statusInfoTransform.Find("armorBar").transform.GetComponent<HealthBar>();
         _shieldBar = _statusInfoTransform.Find("shieldBar").transform.GetComponent<HealthBar>();
 
@@ -78,7 +81,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeUnits()
     {
-        for (int i = 0; i < 6; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             var tank = Instantiate(gameController.tankPrefab);
             tank.transform.position = new Vector3(Random.value * 10, 1, Random.value * 10);
@@ -90,7 +93,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeEnemyUnits()
     {
-        for (int i = 0; i < 6; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             var tankEnemy = Instantiate(gameController.tankEnemyPrefab);
             tankEnemy.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
@@ -118,21 +121,20 @@ public class Unit : MonoBehaviour
         ////  • option 1: Use Vector2.SignedAngle() & Rotate(Vector3.up)
         ////  • option 2: Use Vector3.SignedAngle() & Rotate(transform.up)  -> should be this IMHO (this is used now)
 
-        var toTargetDirection = _target.transform.position - transform.position;
+        var toTargetDirection = _target.transform.position - _thisTransform.position;
 
         /***  Movement  ***/        
         var toTargetSqrMagnitude = toTargetDirection.sqrMagnitude;
 
         // TODO: Marge toTargetSqrMagnitude with declaration if "Slow down when near to target" is not used
-        if (WasTargetReached(toTargetSqrMagnitude))  // target reached
+        if (CheckTargetReached(toTargetSqrMagnitude))  // target reached
         {
-            UnsetTarget();
 
             if (_isOnUnit)
             {
                 // TODO: This is not executing. Maybe it's not needed with a proper collision mesh. Try to make a thorn on top & on the bottom of collision mesh, so unit slides from another one. 
                 // _moveAfterFinishedOnTopOfAnotherUnit = true;
-                _rb.AddForce(transform.forward * speed * 1, ForceMode.Impulse);
+                _rb.AddForce(_thisTransform.forward * speed * 1, ForceMode.Impulse);
                 print("going to ground");
             }
             return;
@@ -143,16 +145,16 @@ public class Unit : MonoBehaviour
         // if (toTargetSqrMagnitude < 4 && _rb.velocity.sqrMagnitude > 1)
         //     speedCoefficient = toTargetSqrMagnitude / 4f;  // TODO: Try to make the motion more fluent. Try Sqr or other value to divide by.
 
-        _rb.AddForce(transform.forward * speed * speedCoefficient, ForceMode.Impulse);
+        _rb.AddForce(_thisTransform.forward * speed * speedCoefficient, ForceMode.Impulse);
 
         /***  Rotation  ***/
-        var toTargetV3Flattened = _target.transform.position - transform.position;
-        toTargetV3Flattened = new Vector3(toTargetV3Flattened.x, 0, toTargetV3Flattened.z);
+        var toTargetV3Flattened = _target.transform.position - _thisTransform.position;
+        toTargetV3Flattened = new (toTargetV3Flattened.x, 0, toTargetV3Flattened.z);
 
-        var toTargetV2 = new Vector2(toTargetV3Flattened.x, toTargetV3Flattened.z);
-        var tankForwardV2 = new Vector2(transform.right.x, transform.right.z);  // It's 'right' to correctly get negative or positive value
+        // var toTargetV2 = new Vector2(toTargetV3Flattened.x, toTargetV3Flattened.z);
+        // var tankForwardV2 = new Vector2(transform.right.x, transform.right.z);  // It's 'right' to correctly get negative or positive value
 
-        var tankForwardFlattenedV3 = new Vector3(transform.forward.x, 0, transform.forward.z);
+        var tankForwardFlattenedV3 = new Vector3(_thisTransform.forward.x, 0, _thisTransform.forward.z);
 
         // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, transform.up) / 4;  // I'm not sure about rotation axis
         // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, Vector3.up) / 4;  // I'm not sure about rotation axis
@@ -168,7 +170,7 @@ public class Unit : MonoBehaviour
         // Rotate faster when initiating movement  // TODO: Try to rotate without movement. I don't know how to solve it because of wheel colliders.
         angleCoefficient *= Math.Abs(angle) > 10 ? .9f : .3f;
 
-        _rb.AddTorque(transform.up * angleCoefficient, ForceMode.Impulse);
+        _rb.AddTorque(_thisTransform.up * angleCoefficient, ForceMode.Impulse);
         // rb.transform.Rotate(Vector3.up * coefficient);  // TODO: What if collision will occur? - It seems good
         // rb.transform.Rotate(transform.up * coefficient);  // seká se
         
@@ -179,9 +181,10 @@ public class Unit : MonoBehaviour
         // print(_rb.velocity.magnitude);  // With current settings it's 3
     }
 
-    bool WasTargetReached(float toTargetSqrMagnitude)
+    bool CheckTargetReached(float toTargetSqrMagnitude)
     {
-        var distanceLimit = _target == _targetDummy ? .2f : 1.1f;
+        // var distanceLimit = _target == targetDummy ? .2f : 1.1f;
+        var distanceLimit = _target == targetDummy ? .2f : targetToShootAt ? _hostileSqrDistanceLimit : 1.1f;
 
         return toTargetSqrMagnitude < distanceLimit;
     }
@@ -193,7 +196,7 @@ public class Unit : MonoBehaviour
     
     void UpdateIsOnGround()
     {
-        if (Physics.Raycast(transform.position, -transform.up, out RaycastHit groundHit, gameController.groundLayer))
+        if (Physics.Raycast(_thisTransform.position, - _thisTransform.up, out RaycastHit groundHit, gameController.groundLayer))
         {
             if (groundHit.distance < .3f)
             {
@@ -294,6 +297,10 @@ public class Unit : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Can target friendly unit to follow or hostile unit to attack
+    /// </summary>
+    /// <param name="target">Unit to target</param>
     public void SetTarget(GameObject target)
     {
         _target = target;
@@ -301,33 +308,32 @@ public class Unit : MonoBehaviour
 
     public void SetTarget(Vector3 target)
     {
-        _targetDummy.transform.position = target;
-        _targetDummy.SetActive(true);
-        _target = _targetDummy;
+        targetDummy.transform.position = target;
+        targetDummy.SetActive(true);
+        _target = targetDummy;
     }
 
     void UnsetTarget()
     {
         // Target is a point in the scene (i.e. unit is not following another unit)
-        if (_targetDummy.activeSelf)
+        if (targetDummy.activeSelf)
         {
-            _targetDummy.SetActive(false);
+            targetDummy.SetActive(false);
             _target = null;
         }
     }
 
     void UpdateHostilesInRange()
     {
-        List<GameObject> hostilesList;
-        hostilesList = CompareTag("Unit") ? EnemyUnits : PlayerUnits;
+        var hostilesList = CompareTag("Unit") ? EnemyUnits : PlayerUnits;
 
         float smallestSqrDistance = 1000000000;
         _hostilesInRange.Clear();
         foreach (var hostile in hostilesList)
         {
-            var sqrDistance = (hostile.transform.position - transform.position).sqrMagnitude;
+            var sqrDistance = (hostile.transform.position - _thisTransform.position).sqrMagnitude;
             // Fills the list with hostiles in range
-            if (sqrDistance < 20)
+            if (sqrDistance < _hostileSqrDistanceLimit)
             {
                 _hostilesInRange.Add(hostile);
                 

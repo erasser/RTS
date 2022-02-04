@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using static Unit;
+using static UnityEngine.GameObject;
 
 public class GameController : MonoBehaviour
 {
@@ -31,16 +32,16 @@ public class GameController : MonoBehaviour
 
     void Start()
     {
-        mainCamera = GameObject.Find("Camera");
+        mainCamera = Find("Camera");
         _mainCameraComponent = mainCamera.GetComponent<Camera>();
         mainCameraTransform = mainCamera.transform;
 
-        GameObject.Find("buttonMove").GetComponent<Button>().onClick.AddListener(ProcessMoveButton);
-        GameObject.Find("map").GetComponent<Button>().onClick.AddListener(MiniMap.ProcessTouch);
+        Find("buttonMove").GetComponent<Button>().onClick.AddListener(ProcessMoveButton);
+        Find("map").GetComponent<Button>().onClick.AddListener(MiniMap.ProcessTouch);
 
         MiniMap.Create();
-        Unit.GenerateSomeUnits();
-        Unit.GenerateSomeEnemyUnits();
+        GenerateSomeUnits();
+        GenerateSomeEnemyUnits();
     }
 
     void Update()
@@ -56,8 +57,8 @@ public class GameController : MonoBehaviour
     {
         ++fixedFrameCount;
 
-        if (!selectedObject) return;  // TODO: Remove
-        
+        // if (!selectedObject) return;  // TODO: Remove
+
         // _camera.transform.position = _selectedObject.transform.position + CameraOffset;
         // _camera.transform.LookAt(_selectedObject.transform);
     }
@@ -75,7 +76,8 @@ public class GameController : MonoBehaviour
         if (/*_moveUnit || */ Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() &&
             Physics.Raycast(_mainCameraComponent.ScreenPointToRay(Input.mousePosition), out _selectionHit))
         {
-            var unitTouched = _selectionHit.collider.CompareTag("Unit");
+            // This affects what can be selected and targeted
+            var unitTouched = _selectionHit.collider.CompareTag("Unit") || _selectionHit.collider.CompareTag("UnitEnemy");
 
             /*  Move unit  */
             if (_moveUnit)
@@ -127,15 +129,21 @@ public class GameController : MonoBehaviour
 
         _moveUnit = true;
         
-        Cursor.SetCursor(mouseCursorMove, new Vector2(32, 32), CursorMode.ForceSoftware);
+        Cursor.SetCursor(mouseCursorMove, new (32, 32), CursorMode.ForceSoftware);
     }
 
     public static void ProcessDestroy(GameObject obj)
     {
         if (obj.CompareTag("Unit"))
+        {
+            Destroy(obj.GetComponent<Unit>().targetDummy);
             PlayerUnits.Remove(obj);
+        }
         else if (obj.CompareTag("UnitEnemy"))
+        {
+            Destroy(obj.GetComponent<Unit>().targetDummy);
             EnemyUnits.Remove(obj);
+        }
 
         Destroy(obj);
     }

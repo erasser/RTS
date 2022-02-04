@@ -1,5 +1,7 @@
 ﻿Test if raycast against ground & hostile units in UpdateShootLaser() works (against hostile units it's tested)
 
+Laser is not visible on short distance (but it's active)
+
 reset cockpit rotation & don't allow to turn it downside
 
 click on minimap
