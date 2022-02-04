@@ -35,7 +35,9 @@ public class Unit : MonoBehaviour
     public float shield = 100;
     public float currentShield = 100;  // Regenerates over time
     public WeaponLaser laser;
-    HealthBar _healthBar;
+    Transform _statusInfoTransform;
+    HealthBar _armorBar;
+    HealthBar _shieldBar;
 
     void Awake()
     {
@@ -53,7 +55,9 @@ public class Unit : MonoBehaviour
         laser.unit = this;
         currentArmor = armor;
         currentShield = shield;
-        _healthBar = gameObject.transform.Find("healthBar").transform.GetComponent<HealthBar>();
+        _statusInfoTransform = transform.Find("UnitStatus").transform;
+        _armorBar = _statusInfoTransform.Find("armorBar").transform.GetComponent<HealthBar>();
+        _shieldBar = _statusInfoTransform.Find("shieldBar").transform.GetComponent<HealthBar>();
 
         SetOutlineComponents();
 
@@ -66,28 +70,32 @@ public class Unit : MonoBehaviour
             UpdateHostilesInRange();
 
         MoveToTarget();
+        
+        AlignStatusInfo();
 
         // laser.UpdateLaserProps();
     }
 
     public static void GenerateSomeUnits()
     {
-        for (int i = 0; i < 2; ++i)
+        for (int i = 0; i < 6; ++i)
         {
             var tank = Instantiate(gameController.tankPrefab);
             tank.transform.position = new Vector3(Random.value * 10, 1, Random.value * 10);
             tank.transform.eulerAngles = new Vector3(0, Random.value * 360, 0);
+            tank.name = $"Tank{PlayerUnits.Count}";
             PlayerUnits.Add(tank);
         }
     }
 
     public static void GenerateSomeEnemyUnits()
     {
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < 6; ++i)
         {
             var tankEnemy = Instantiate(gameController.tankEnemyPrefab);
             tankEnemy.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
             tankEnemy.transform.eulerAngles = new Vector3(0, Random.value * 360, 0);
+            tankEnemy.name = $"TankEnemy{EnemyUnits.Count}";
             EnemyUnits.Add(tankEnemy);
         }
     }
@@ -393,29 +401,52 @@ public class Unit : MonoBehaviour
         return CompareTag(unit.tag);
     }
 
-    void TakeDamage(float damage)
+    public void TakeDamage(float damage)
     {
         if (currentShield > 0)
         {
             currentShield -= damage; // Apply damage to shield
+            UpdateShieldBar();
 
             if (currentShield < 0)
             {
                 currentArmor += currentShield; // Apply damage to armor, if damage exceeds the shield level (this actually subtracts)
                 currentShield = 0;
+                UpdateArmorBar();
             }
         }
         else
+        {
             currentArmor -= damage;
+            UpdateArmorBar();
+        }
 
-        if (currentArmor > 0)
-            UpdateStatusBars();
-        else
+        if (currentArmor <= 0)
             ProcessDestroy(gameObject);
     }
 
-    void UpdateStatusBars()
+    // TODO: ► Needed only when unit or camera transforms
+    void AlignStatusInfo()
     {
-        _healthBar.UpdateParams(currentArmor / armor);
+        _statusInfoTransform.LookAt(mainCameraTransform);
+        var eulerAngles = _statusInfoTransform.eulerAngles;
+        eulerAngles = new (eulerAngles.x, mainCameraTransform.eulerAngles.y + 180, eulerAngles.z);
+        _statusInfoTransform.eulerAngles = eulerAngles;
+
+        // This also works
+        // var forward = mainCameraTransform.position - _statusInfoTransform.position;
+        // forward.Normalize();
+        // var up = Vector3.Cross(forward, - mainCameraTransform.right);
+        // _statusInfoTransform.rotation = Quaternion.LookRotation(forward, up);
+    }
+
+    void UpdateShieldBar()
+    {
+        _shieldBar.UpdateParams(currentShield / shield);
+    }
+
+    void UpdateArmorBar()
+    {
+        _armorBar.UpdateParams(currentArmor / armor);
     }
 }

@@ -6,15 +6,17 @@ public class WeaponLaser : MonoBehaviour
     GameObject _laserGameObject;  // Object holding VolumetricLines component to be able to toggle active state.
     VolumetricLineBehavior _laserComponent;
     public Unit unit;
+    GameObject _hostileHitUnitGameObject;   // Cached last hit hostile unit
+    Unit _hostileHitUnit;                   // Cached last hit hostile unit's Unit component
 
-    private void Start()
+    void Start()
     {
         _laserGameObject = unit.cannonSocketTransform.Find("laser").gameObject;
         _laserGameObject.SetActive(false);
         _laserComponent = _laserGameObject.GetComponent<VolumetricLineBehavior>();
     }
 
-    private void FixedUpdate()
+    void FixedUpdate()
     {
         UpdateLaserProps();
     }
@@ -26,6 +28,8 @@ public class WeaponLaser : MonoBehaviour
             _laserGameObject.SetActive(false);
             return;
         }
+        
+        SetHostileHitUnit(unit.targetToShootAt);
 
         unit.toShootTargetDirection = unit.targetToShootAt.transform.position - unit.cockpitTransform.position + Vector3.up * .08f;
 
@@ -38,22 +42,41 @@ public class WeaponLaser : MonoBehaviour
             return;
         }
 
-        // TODO: ► If hits hostile non-targeted unit, shorten the laser
+        // TODO: Consider to hit ground to satisfy the player?
+        var nonTargetedHostileHit = false;
         _laserGameObject.SetActive(true);
-        var distance = SquareRoot.GetValue(unit.toShootTargetDirection.sqrMagnitude);
+        var distance = SquareRoot.GetValue(unit.toShootTargetDirection.sqrMagnitude);  // laser length
         if (Physics.Raycast(unit.cockpitTransform.position, unit.toShootTargetDirection, out RaycastHit selectionHit, distance /*, GameController.instance.groundLayer*/))
         {
             // A friendly unit or the ground is in laser's way => disable the laser
-            if (unit.IsFriendly(selectionHit.collider.gameObject) /*&& selectionHit.collider.gameObject != targetToShootAt*/ ||
-                selectionHit.collider.name == "ground")
+            if (unit.IsFriendly(selectionHit.collider.gameObject) || selectionHit.collider.name == "ground")
                 _laserGameObject.SetActive(false);
-            // else
-            //     _laser.SetActive(true);
-        }
-        // else
-        //     _laser.SetActive(true);
+            // Enemy non-targeted unit => hit it
+            else if (selectionHit.collider.gameObject != unit.targetToShootAt)
+            {
+                SetHostileHitUnit(selectionHit.collider.gameObject);
+                _laserComponent.EndPos = Vector3.forward * (SquareRoot.GetValue((_hostileHitUnitGameObject.transform.position - unit.transform.position).sqrMagnitude) + .1f);
+                
+                _hostileHitUnit.TakeDamage(.1f);
+                nonTargetedHostileHit = true;
+            }
 
-        _laserComponent.EndPos = Vector3.forward * distance; // laser length
+            // Leave it here to test & prevent unit self casting
+            if (unit.gameObject == selectionHit.collider.gameObject)
+                Debug.LogWarning("• unit self cast!");
+        }
+
+        if (nonTargetedHostileHit) return;
+
+        _laserComponent.EndPos = Vector3.forward * distance;
+        _hostileHitUnit.TakeDamage(.1f);
     }
-   
+
+    void SetHostileHitUnit(GameObject unitGameObject)
+    {
+        if (_hostileHitUnitGameObject && _hostileHitUnitGameObject == unitGameObject) return;
+
+        _hostileHitUnitGameObject = unitGameObject;
+        _hostileHitUnit = unitGameObject.GetComponent<Unit>();
+    }
 }

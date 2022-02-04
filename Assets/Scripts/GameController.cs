@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using static Unit;
 
 public class GameController : MonoBehaviour
 {
@@ -14,7 +15,8 @@ public class GameController : MonoBehaviour
     public Texture minimapEnemyImage;
     public Texture minimapSelectedUnitImage;
     public static GameObject mainCamera;
-    static Camera _cameraComponent;
+    static Camera _mainCameraComponent;
+    public static Transform mainCameraTransform;
     public static GameObject selectedObject;
     static Unit _selectedObjectUnitComponent;
     static bool _moveUnit;
@@ -30,7 +32,8 @@ public class GameController : MonoBehaviour
     void Start()
     {
         mainCamera = GameObject.Find("Camera");
-        _cameraComponent = mainCamera.GetComponent<Camera>();
+        _mainCameraComponent = mainCamera.GetComponent<Camera>();
+        mainCameraTransform = mainCamera.transform;
 
         GameObject.Find("buttonMove").GetComponent<Button>().onClick.AddListener(ProcessMoveButton);
         GameObject.Find("map").GetComponent<Button>().onClick.AddListener(MiniMap.ProcessTouch);
@@ -70,7 +73,7 @@ public class GameController : MonoBehaviour
             ProcessMoveButton();
 
         if (/*_moveUnit || */ Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() &&
-            Physics.Raycast(_cameraComponent.ScreenPointToRay(Input.mousePosition), out _selectionHit))
+            Physics.Raycast(_mainCameraComponent.ScreenPointToRay(Input.mousePosition), out _selectionHit))
         {
             var unitTouched = _selectionHit.collider.CompareTag("Unit");
 
@@ -129,6 +132,11 @@ public class GameController : MonoBehaviour
 
     public static void ProcessDestroy(GameObject obj)
     {
+        if (obj.CompareTag("Unit"))
+            PlayerUnits.Remove(obj);
+        else if (obj.CompareTag("UnitEnemy"))
+            EnemyUnits.Remove(obj);
+
         Destroy(obj);
     }
 }
