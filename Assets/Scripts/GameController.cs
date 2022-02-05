@@ -86,7 +86,11 @@ public class GameController : MonoBehaviour
             if (_moveUnit)
             {
                 if (unitTouched)
+                {
                     _selectedObjectUnitComponent.SetTarget(_selectionHit.collider.gameObject);
+                    if (!_selectedObjectUnitComponent.IsFriendly(_selectionHit.collider.gameObject))
+                        _selectedObjectUnitComponent.targetToShootAt = _selectionHit.collider.gameObject;
+                }
                 else
                     _selectedObjectUnitComponent.SetTarget(_selectionHit.point);
 
@@ -111,8 +115,9 @@ public class GameController : MonoBehaviour
         UnselectObject();
 
         selectedObject = obj;
-        _selectedObjectUnitComponent = selectedObject.GetComponent<Unit>();
+        _selectedObjectUnitComponent = obj.GetComponent<Unit>();
         _selectedObjectUnitComponent.ToggleOutline(true);
+        _selectedObjectUnitComponent.unitCamera.SetActive(true);
     }
 
     void UnselectObject()
@@ -120,6 +125,7 @@ public class GameController : MonoBehaviour
         if (!selectedObject) return;
 
         _selectedObjectUnitComponent.ToggleOutline(false);
+        _selectedObjectUnitComponent.unitCamera.SetActive(false);
         selectedObject = null;
         _selectedObjectUnitComponent = null;
         _moveUnit = false;

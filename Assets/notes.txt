@@ -1,12 +1,12 @@
-﻿Test if raycast against ground & hostile units in UpdateShootLaser() works (against hostile units it's tested)
+﻿If heading to selected hostile target, don't stop when near to another hostile unit.
+
+What should happen if targeted unit is destroyed meanwhile by other unit? Maybe the unit should head to the location of destroyed unit.
+
+Test if raycast against ground & hostile units in UpdateShootLaser() works (against hostile units it's tested)
 
 reset cockpit rotation & don't allow to turn it downside
 
 click on minimap
-
-unit info billboard
-
-unit cam view
 
 add ufo unit
 

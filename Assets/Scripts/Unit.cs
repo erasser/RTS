@@ -41,6 +41,7 @@ public class Unit : MonoBehaviour
     HealthBar _shieldBar;
     Transform _thisTransform;  // Cached transform of this
     float _lastDamagedTime;    // Time, when unit was last damaged - serves to determine shield regeneration.
+    public GameObject unitCamera;
 
     void Awake()
     {
@@ -62,6 +63,8 @@ public class Unit : MonoBehaviour
         _statusInfoTransform = _thisTransform.Find("UnitStatus").transform;
         _armorBar = _statusInfoTransform.Find("armorBar").transform.GetComponent<HealthBar>();
         _shieldBar = _statusInfoTransform.Find("shieldBar").transform.GetComponent<HealthBar>();
+        unitCamera = cockpitTransform.Find("Camera3rdPerson").gameObject;
+        unitCamera.SetActive(false);
 
         SetOutlineComponents();
 
@@ -82,7 +85,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeUnits()
     {
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < 6; ++i)
         {
             var tank = Instantiate(gameController.tankPrefab);
             tank.transform.position = new Vector3(Random.value * 10, 1, Random.value * 10);
@@ -94,7 +97,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeEnemyUnits()
     {
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < 6; ++i)
         {
             var tankEnemy = Instantiate(gameController.tankEnemyPrefab);
             tankEnemy.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
@@ -454,7 +457,7 @@ public class Unit : MonoBehaviour
 
     void RegenerateShield()
     {
-        if (currentShield == shield || Time.time - _lastDamagedTime < 3) return;
+        if (currentShield == shield || Time.time - _lastDamagedTime < 4) return;  // Fuck the inspection warning, should be ok.
 
         currentShield += .15f;
         currentShield = Mathf.Min(currentShield, shield);
