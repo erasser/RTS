@@ -23,8 +23,9 @@ public class GameController : MonoBehaviour
     static bool _moveUnit;
     public static int fixedFrameCount;
     RaycastHit _selectionHit;
+    GameObject _overlayRenderTexture;
 
-    private void Awake()
+    void Awake()
     {
         gameController = this;
         new SquareRoot();
@@ -35,10 +36,12 @@ public class GameController : MonoBehaviour
         mainCamera = Find("Camera");
         _mainCameraComponent = mainCamera.GetComponent<Camera>();
         mainCameraTransform = mainCamera.transform;
+        _overlayRenderTexture = Find("OverlayCameraRenderTexture");
 
         Find("buttonMove").GetComponent<Button>().onClick.AddListener(ProcessMoveButton);
         Find("map").GetComponent<Button>().onClick.AddListener(MiniMap.ProcessTouch);
 
+        UpdateRenderTexture();
         MiniMap.Create();
         GenerateSomeUnits();
         GenerateSomeEnemyUnits();
@@ -146,5 +149,12 @@ public class GameController : MonoBehaviour
         }
 
         Destroy(obj);
+    }
+
+    void UpdateRenderTexture()
+    {
+        _overlayRenderTexture.GetComponent<RectTransform>().sizeDelta = new Vector2(Screen.width, Screen.height);
+        _overlayRenderTexture.GetComponent<Image>().material.mainTexture.width = Screen.width;
+        _overlayRenderTexture.GetComponent<Image>().material.mainTexture.height = Screen.height;
     }
 }

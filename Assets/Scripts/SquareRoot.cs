@@ -3,6 +3,7 @@
 public class SquareRoot
 {
     static readonly List<float> Values;
+    static List<float> Values1;
 
     /// <summary>
     ///     Returns approximate square root of passed number in range [0, 200].
@@ -11,11 +12,31 @@ public class SquareRoot
     /// <returns>Approximate square root.</returns>
     public static float GetValue(float input)
     {
-        return Values[(int)input];
+        return input > 1 ? Values[(int)input] : Values1[(int)(input * 10)];
+    }
+
+    static void GenerateSquareRoot1Values()
+    {
+        Values1 = new()
+        {
+            0f,
+            .31622776601684f,
+            .44721359549996f,
+            .54772255750517f,
+            .63245553203368f,
+            .70710678118655f,
+            .77459666924148f,
+            .83666002653408f,
+            .89442719099992f,
+            .94868329805051f,
+            1f
+        };
     }
 
     static SquareRoot()
     {
+        GenerateSquareRoot1Values();
+
         Values = new()
         {
             0f,

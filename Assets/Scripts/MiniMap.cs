@@ -19,7 +19,7 @@ public class MiniMap : MonoBehaviour
         // var mapSizeV2 = mapImage.GetComponent<RectTransform>().rect;
         mapImage.GetComponent<RectTransform>().sizeDelta = new (Screen.width / 8, Screen.width / 8);
         var mapSizeV2 = mapImage.GetComponent<RectTransform>().sizeDelta;
-        Debug.Log(mapSizeV2);
+        // Debug.Log(mapSizeV2);
         _cameraViewRect = Find("cameraViewRect");
         _worldSize = new (100, 100);  // TODO: Get dynamically from mesh
         _mapSize = new ((int)mapSizeV2.x, (int)mapSizeV2.y);
@@ -31,7 +31,7 @@ public class MiniMap : MonoBehaviour
             antiAliasing = 4
         };
 
-        GameObject cameraMap = new("cameraThumbnail", typeof(Camera));
+        GameObject cameraMap = new("cameraMinimap", typeof(Camera));
         var cameraMapCameraComponent = cameraMap.GetComponent<Camera>();
         cameraMapCameraComponent.targetTexture = renderTexture;
 

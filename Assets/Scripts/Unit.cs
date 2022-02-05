@@ -28,7 +28,7 @@ public class Unit : MonoBehaviour
     bool _moveAfterFinishedOnTopOfAnotherUnit;
     public static readonly List<GameObject> PlayerUnits = new();
     public static readonly List<GameObject> EnemyUnits = new();
-    List<GameObject> _hostilesInRange = new();  // For enemy units, player units are hostile. For player units, enemy units are hostile.
+    List<GameObject> _hostilesInRange = new(); // For enemy, player is hostile. For player, enemy is hostile. TODO: Not used.
     public Transform cockpitTransform;
     public Transform cannonSocketTransform;
     public float armor = 100;
@@ -40,6 +40,7 @@ public class Unit : MonoBehaviour
     HealthBar _armorBar;
     HealthBar _shieldBar;
     Transform _thisTransform;  // Cached transform of this
+    float _lastDamagedTime;    // Time, when unit was last damaged - serves to determine shield regeneration.
 
     void Awake()
     {
@@ -73,8 +74,8 @@ public class Unit : MonoBehaviour
             UpdateHostilesInRange();
 
         MoveToTarget();
-        
         AlignStatusInfo();
+        RegenerateShield();
 
         // laser.UpdateLaserProps();
     }
@@ -129,7 +130,6 @@ public class Unit : MonoBehaviour
         // TODO: Marge toTargetSqrMagnitude with declaration if "Slow down when near to target" is not used
         if (CheckTargetReached(toTargetSqrMagnitude))  // target reached
         {
-
             if (_isOnUnit)
             {
                 // TODO: This is not executing. Maybe it's not needed with a proper collision mesh. Try to make a thorn on top & on the bottom of collision mesh, so unit slides from another one. 
@@ -183,10 +183,30 @@ public class Unit : MonoBehaviour
 
     bool CheckTargetReached(float toTargetSqrMagnitude)
     {
-        // var distanceLimit = _target == targetDummy ? .2f : 1.1f;
-        var distanceLimit = _target == targetDummy ? .2f : targetToShootAt ? _hostileSqrDistanceLimit : 1.1f;
+        float distanceLimit;
+        var targetIsDummy = _target == targetDummy;
+        
+        // dummy target
+        if (targetIsDummy)
+        {
+            distanceLimit = .2f;
+        }
+        // friendly target
+        else if (IsFriendly(_target))
+        {
+            distanceLimit = 1.1f;
+        }
+        // enemy target
+        else
+        {
+            distanceLimit = _hostileSqrDistanceLimit;
+        }
 
-        return toTargetSqrMagnitude < distanceLimit;
+        var targetReached = toTargetSqrMagnitude < distanceLimit;
+        if (targetReached && targetIsDummy)
+            UnsetDummyTarget();
+
+        return targetReached;
     }
 
     void SetBottomToCenterDistance()
@@ -313,14 +333,14 @@ public class Unit : MonoBehaviour
         _target = targetDummy;
     }
 
-    void UnsetTarget()
+    void UnsetDummyTarget()  // Can be used to unset other targets as well, with a little change (it's not necessary now).
     {
         // Target is a point in the scene (i.e. unit is not following another unit)
-        if (targetDummy.activeSelf)
-        {
-            targetDummy.SetActive(false);
-            _target = null;
-        }
+        // if (targetDummy.activeSelf) 
+        // {
+        targetDummy.SetActive(false);
+        _target = null;
+        // }
     }
 
     void UpdateHostilesInRange()
@@ -356,7 +376,6 @@ public class Unit : MonoBehaviour
     public void UpdateCockpitAndCannonRotation()
     {
         // if (!_targetToShootAt) return;
-        
 
         var lookAtRotation = Quaternion.LookRotation(toShootTargetDirection);
 
@@ -409,6 +428,8 @@ public class Unit : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
+        _lastDamagedTime = Time.time;
+        
         if (currentShield > 0)
         {
             currentShield -= damage; // Apply damage to shield
@@ -431,7 +452,17 @@ public class Unit : MonoBehaviour
             ProcessDestroy(gameObject);
     }
 
-    // TODO: ► Needed only when unit or camera transforms
+    void RegenerateShield()
+    {
+        if (currentShield == shield || Time.time - _lastDamagedTime < 3) return;
+
+        currentShield += .15f;
+        currentShield = Mathf.Min(currentShield, shield);
+
+        UpdateShieldBar();
+    }
+    
+    // TODO: ► Needed only when unit or camera transforms or shield is regenerated
     void AlignStatusInfo()
     {
         _statusInfoTransform.LookAt(mainCameraTransform);

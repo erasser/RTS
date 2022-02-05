@@ -43,32 +43,37 @@ public class WeaponLaser : MonoBehaviour
         }
 
         // TODO: Consider to hit ground to satisfy the player?
-        var nonTargetedHostileHit = false;
+        // var nonTargetedHostileHit = false;
         _laserGameObject.SetActive(true);
         var distance = SquareRoot.GetValue(unit.toShootTargetDirection.sqrMagnitude);  // laser length
         if (Physics.Raycast(unit.cockpitTransform.position, unit.toShootTargetDirection, out RaycastHit selectionHit, distance /*, GameController.instance.groundLayer*/))
         {
             // A friendly unit or the ground is in laser's way => disable the laser
             if (unit.IsFriendly(selectionHit.collider.gameObject) || selectionHit.collider.name == "ground")
+            {
                 _laserGameObject.SetActive(false);
+                return;
+            }
             // Enemy non-targeted unit => hit it
-            else if (selectionHit.collider.gameObject != unit.targetToShootAt)
+            /*else*/
+            if (selectionHit.collider.gameObject != unit.targetToShootAt)
             {
                 SetHostileHitUnit(selectionHit.collider.gameObject);
-                _laserComponent.EndPos = Vector3.forward * (SquareRoot.GetValue((_hostileHitUnitGameObject.transform.position - unit.transform.position).sqrMagnitude) + .1f);
-                
+                SetLength(SquareRoot.GetValue((_hostileHitUnitGameObject.transform.position - unit.transform.position).sqrMagnitude) + .1f);
+
                 _hostileHitUnit.TakeDamage(.1f);
-                nonTargetedHostileHit = true;
+                // nonTargetedHostileHit = true;
+                return;
             }
 
             // Leave it here to test & prevent unit self casting
-            if (unit.gameObject == selectionHit.collider.gameObject)
-                Debug.LogWarning("• unit self cast!");
+            // if (unit.gameObject == selectionHit.collider.gameObject)
+            //     Debug.LogWarning("• unit self cast!");
         }
 
-        if (nonTargetedHostileHit) return;
+        // if (nonTargetedHostileHit) return;
 
-        _laserComponent.EndPos = Vector3.forward * distance;
+        SetLength(distance);
         _hostileHitUnit.TakeDamage(.1f);
     }
 
@@ -78,5 +83,14 @@ public class WeaponLaser : MonoBehaviour
 
         _hostileHitUnitGameObject = unitGameObject;
         _hostileHitUnit = unitGameObject.GetComponent<Unit>();
+    }
+
+    /// <summary>
+    /// Sets laser length.
+    /// </summary>
+    /// <param name="length">Laser length</param>
+    void SetLength(float length)
+    {
+        _laserComponent.EndPos = Vector3.forward * length;
     }
 }
