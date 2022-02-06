@@ -19,13 +19,12 @@ public class Unit : MonoBehaviour
     Rigidbody _rb;
     GameObject _target;  // TODO: Should be placed on the ground to correctly detect, when the target is reached
     public GameObject targetDummy;
-    public GameObject targetToShootAt;
+    public GameObject targetToShootAt;  // It's cleared after unit too far or destroyed
     public Vector3 toShootTargetDirection;  // Cached, because it's used many times  // TODO: Consider moving to WeaponLaser, if it's used just for laser.
-    GameObject _camera3rdPerson;
     public List<Outline> outlineComponents = new();
     float _initialDrag;         // 5 is fine
     float _initialAngularDrag;  // 5 is fine (10 before, but it prevented the unit to face a target precisely, the net force was not big enough)
-    bool _moveAfterFinishedOnTopOfAnotherUnit;
+    // bool _moveAfterFinishedOnTopOfAnotherUnit;
     public static readonly List<GameObject> PlayerUnits = new();
     public static readonly List<GameObject> EnemyUnits = new();
     List<GameObject> _hostilesInRange = new(); // For enemy, player is hostile. For player, enemy is hostile. TODO: Not used.
@@ -49,7 +48,6 @@ public class Unit : MonoBehaviour
         _rb = GetComponent<Rigidbody>();
         _rb.centerOfMass = Vector3.down * .1f;
         // _rb.centerOfMass = new Vector3(0, -.1f, .1f);
-        _camera3rdPerson = GameObject.Find("Camera3rdPerson");
         _initialDrag = _rb.drag;
         _initialAngularDrag = _rb.angularDrag;
         targetDummy = Instantiate(gameController.targetPrefab);
@@ -85,7 +83,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeUnits()
     {
-        for (int i = 0; i < 6; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             var tank = Instantiate(gameController.tankPrefab);
             tank.transform.position = new Vector3(Random.value * 10, 1, Random.value * 10);
@@ -97,7 +95,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeEnemyUnits()
     {
-        for (int i = 0; i < 6; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             var tankEnemy = Instantiate(gameController.tankEnemyPrefab);
             tankEnemy.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
@@ -133,13 +131,13 @@ public class Unit : MonoBehaviour
         // TODO: Marge toTargetSqrMagnitude with declaration if "Slow down when near to target" is not used
         if (CheckTargetReached(toTargetSqrMagnitude))  // target reached
         {
-            if (_isOnUnit)
-            {
-                // TODO: This is not executing. Maybe it's not needed with a proper collision mesh. Try to make a thorn on top & on the bottom of collision mesh, so unit slides from another one. 
-                // _moveAfterFinishedOnTopOfAnotherUnit = true;
-                _rb.AddForce(_thisTransform.forward * speed * 1, ForceMode.Impulse);
-                print("going to ground");
-            }
+            // if (_isOnUnit)
+            // {
+            //     // TODO: This is not executing. Maybe it's not needed with a proper collision mesh. Try to make a thorn on top & on the bottom of collision mesh, so unit slides from another one. 
+            //     // _moveAfterFinishedOnTopOfAnotherUnit = true;
+            //     _rb.AddForce(_thisTransform.forward * speed * 2, ForceMode.Impulse);
+            //     print("going to ground");
+            // }
             return;
         }
 
@@ -188,24 +186,24 @@ public class Unit : MonoBehaviour
     {
         float distanceLimit;
         var targetIsDummy = _target == targetDummy;
-        
+
         // dummy target
         if (targetIsDummy)
-        {
             distanceLimit = .2f;
-        }
         // friendly target
         else if (IsFriendly(_target))
-        {
             distanceLimit = 1.1f;
-        }
-        // enemy target
+        // hostile target
         else
         {
+            // Heading for another hostile unit
+            if (_target != targetToShootAt)
+                return false;
             distanceLimit = _hostileSqrDistanceLimit;
         }
 
         var targetReached = toTargetSqrMagnitude < distanceLimit;
+
         if (targetReached && targetIsDummy)
             UnsetDummyTarget();
 
@@ -254,7 +252,7 @@ public class Unit : MonoBehaviour
             // print("not on unit!");
             SetIsOnUnit(false);
             speed /= _higherSpeedCoefficient;
-            _moveAfterFinishedOnTopOfAnotherUnit = false;
+            // _moveAfterFinishedOnTopOfAnotherUnit = false;
         }
     }
 
@@ -351,17 +349,22 @@ public class Unit : MonoBehaviour
         var hostilesList = CompareTag("Unit") ? EnemyUnits : PlayerUnits;
 
         float smallestSqrDistance = 1000000000;
-        _hostilesInRange.Clear();
+        // _hostilesInRange.Clear();
         foreach (var hostile in hostilesList)
         {
             var sqrDistance = (hostile.transform.position - _thisTransform.position).sqrMagnitude;
             // Fills the list with hostiles in range
             if (sqrDistance < _hostileSqrDistanceLimit)
             {
-                _hostilesInRange.Add(hostile);
-                
+                // _hostilesInRange.Add(hostile);
+
+                // Unit is heading for this hostile. Hostile now in range => set it as a target to shoot at.
+                if (_target == hostile)
+                    targetToShootAt = hostile;
+
+                // This hostile unit is closest hostile for now.
                 // Do this only if unit doesn't have a shoot target, so the current target is not overwritten.
-                if (!targetToShootAt && sqrDistance < smallestSqrDistance)
+                else if (!targetToShootAt && sqrDistance < smallestSqrDistance)
                 {
                     smallestSqrDistance = sqrDistance;
                     targetToShootAt = hostile;
@@ -378,7 +381,7 @@ public class Unit : MonoBehaviour
 
     public void UpdateCockpitAndCannonRotation()
     {
-        // if (!_targetToShootAt) return;
+        if (!laser.IsShooting()) return;
 
         var lookAtRotation = Quaternion.LookRotation(toShootTargetDirection);
 

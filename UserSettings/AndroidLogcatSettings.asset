@@ -1,13 +1,92 @@
 {
-    "m_SelectedDeviceId": "",
+    "m_SelectedDeviceId": "J5Y7N17612000545",
     "m_SelectedPackage": {
-        "deviceId": "",
-        "name": "",
-        "processId": 0,
+        "deviceId": "J5Y7N17612000545",
+        "name": "com.DefaultCompany.RTS",
+        "processId": 30983,
         "exited": false
     },
     "m_SelectedPriority": 0,
-    "m_KnownPackagesForSerialization": [],
+    "m_KnownPackagesForSerialization": [
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 19674,
+            "exited": true
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 24097,
+            "exited": true
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.huawei.android.launcher",
+            "processId": 3288,
+            "exited": false
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 25282,
+            "exited": false
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 26017,
+            "exited": false
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 26599,
+            "exited": false
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 27384,
+            "exited": false
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 27805,
+            "exited": false
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 28781,
+            "exited": false
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 29135,
+            "exited": false
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 30031,
+            "exited": false
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 30428,
+            "exited": false
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 30983,
+            "exited": false
+        }
+    ],
     "m_Tags": {
         "m_Entries": [
             {
@@ -41,9 +120,20 @@
         ]
     },
     "m_MemoryViewerState": {
-        "MemoryWindowHeight": 0.0,
-        "MemoryWindowWidth": 0.0,
-        "MemoryTypeEnabled": [],
+        "MemoryWindowHeight": 300.0,
+        "MemoryWindowWidth": 170.0,
+        "MemoryTypeEnabled": [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+        ],
         "MemoryGroup": 2,
         "Behavior": 0
     },

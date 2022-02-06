@@ -11,7 +11,7 @@ public class MiniMap : MonoBehaviour
     static Vector2Int _mapSize;
     static Vector2Int _mapSizeHalf;
     static Vector2Int _mapRatio;  // Ratio of minimap size / world size
-    static GameObject _cameraViewRect;
+    static GameObject _minimapViewRect;
 
     public static void Create()  // Gets texture size from map image UI element rect transform
     {
@@ -20,7 +20,7 @@ public class MiniMap : MonoBehaviour
         mapImage.GetComponent<RectTransform>().sizeDelta = new (Screen.width / 8, Screen.width / 8);
         var mapSizeV2 = mapImage.GetComponent<RectTransform>().sizeDelta;
         // Debug.Log(mapSizeV2);
-        _cameraViewRect = Find("cameraViewRect");
+        _minimapViewRect = Find("minimapViewRect");
         _worldSize = new (100, 100);  // TODO: Get dynamically from mesh
         _mapSize = new ((int)mapSizeV2.x, (int)mapSizeV2.y);
         _mapSizeHalf = _mapSize / 2;
@@ -40,6 +40,7 @@ public class MiniMap : MonoBehaviour
 
         RenderTexture.active = cameraMapCameraComponent.targetTexture;
         cameraMapCameraComponent.Render();
+        Destroy(cameraMap);
 
         Texture2D texture = new(_mapSize.x, _mapSize.y);
         texture.ReadPixels(new Rect(0, 0, _mapSize.x, _mapSize.y), 0, 0);  // targetTexture must be assigned before ReadPixels()
@@ -49,11 +50,11 @@ public class MiniMap : MonoBehaviour
         mapImage.GetComponent<Image>().sprite = sprite;
     }
 
-    void OnMouseOver()
-    {
-        print("mouse over");
+    // void OnMouseOver()
+    // {
+        // print("mouse over");
         // print(EventSystem.current);
-    }
+    // }
 
     public static void UpdateMap()
     {
@@ -89,8 +90,8 @@ public class MiniMap : MonoBehaviour
         cameraPosition.z = worldCoords.y;
         GameController.mainCamera.transform.position = cameraPosition;
 
-        var cameraViewRectTransform = _cameraViewRect.GetComponent<RectTransform>();
-        cameraViewRectTransform.transform.position = new Vector3(pointerCoords.x, Screen.height - pointerCoords.y, 0);
+        var minimapViewRectViewRectTransform = _minimapViewRect.GetComponent<RectTransform>();
+        minimapViewRectViewRectTransform.transform.position = new Vector3(pointerCoords.x, Screen.height - pointerCoords.y, 0);
         Debug.Log(pointerCoords);
 
 

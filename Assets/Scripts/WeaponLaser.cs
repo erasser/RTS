@@ -93,4 +93,9 @@ public class WeaponLaser : MonoBehaviour
     {
         _laserComponent.EndPos = Vector3.forward * length;
     }
+
+    public bool IsShooting()
+    {
+        return unit.targetToShootAt;
+    }
 }

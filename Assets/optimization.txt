@@ -1,0 +1,23 @@
+﻿https://learn.unity.com/tutorial/fixing-performance-problems?&_ga=2.258500874.1421638371.1644157922-1236908546.1626543225#5c7f8528edbc2a002053b596
+
+• Try to sync FPS with FixedUpdate
+• There exists OnDemandRendering
+• LOD models (LOD Group component)
+• Mobile shader materials
+
+
+TEST PERFORMANCE
+════════════════
+- InvokeRepeating vs. Coroutines vs. custom solution (time tracking) - https://forum.unity.com/threads/invokerepeating-vs-coroutines-performance.497208
+- Raycast
+- Vector3.magnitude vs. my SquareRoot.cs from Vector3.sqrMagnitude
+
+
+TESTS ON MOBILE
+===============
+• It seems that if the game runs longer, FPS got higher after build
+Lowest settings (2 units, no lasers, no info bars)          50
+Lowest settings (2 units, no lasers)                        37  => * info bars costs 10+ FPS
+Lowest settings + only full textured ground                 21  => heavy FPS impact of PB texture (but should be quartered by settings now)
+Lowest settings + 40 units (including lasers, no info bars) 27  => * info bars don't cost FPS
+Lowest settings + 40 units (including lasers)               27  => Each unit cost FPS
