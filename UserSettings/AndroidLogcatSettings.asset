@@ -3,7 +3,7 @@
     "m_SelectedPackage": {
         "deviceId": "J5Y7N17612000545",
         "name": "com.DefaultCompany.RTS",
-        "processId": 30983,
+        "processId": 31789,
         "exited": false
     },
     "m_SelectedPriority": 0,
@@ -84,6 +84,12 @@
             "deviceId": "J5Y7N17612000545",
             "name": "com.DefaultCompany.RTS",
             "processId": 30983,
+            "exited": false
+        },
+        {
+            "deviceId": "J5Y7N17612000545",
+            "name": "com.DefaultCompany.RTS",
+            "processId": 31789,
             "exited": false
         }
     ],

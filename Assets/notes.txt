@@ -1,4 +1,14 @@
-﻿When unit's shoot at target is destroyed or leaves, unit should find it's new target.
+﻿► Bars Render Texture material is Particles/Standard Unlit :-O
+
+Try to add & raycast simpler collider on units (and maybe on the ground?)
+
+380: return cockpit to initial rotation
+
+If heading to selected hostile target, don't stop when near to another hostile unit.
+
+What should happen if targeted unit is destroyed meanwhile by other unit? Maybe the unit should head to the location of destroyed unit.
+
+When unit's shoot at target is destroyed or leaves, unit should find it's new target.
     Also check a situation, when hostile unit is targeted and leaves.
 
 If heading to selected hostile target, don't stop when near to another hostile unit.

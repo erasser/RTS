@@ -23,18 +23,18 @@ public class GameController : MonoBehaviour
     static bool _moveUnit;
     public static int fixedFrameCount;
     RaycastHit _selectionHit;
-    GameObject _overlayRenderTexture;
+    static GameObject _overlayRenderTexture;
     GameObject _unitCameraRenderTexture;
 
     void Awake()
     {
         gameController = this;
         new SquareRoot();
-#if !UNITY_EDITOR
-        // Application.targetFrameRate = (int)(1 / Time.fixedDeltaTime);  // My try to sync rendering with fixed update
-        Application.targetFrameRate = 60;
-#endif
 
+        #if !UNITY_EDITOR
+        // Application.targetFrameRate = (int)(1 / Time.fixedDeltaTime);  // My try to sync rendering with fixed update
+            Application.targetFrameRate = 60;
+        #endif
     }
 
     void Start()
@@ -43,12 +43,12 @@ public class GameController : MonoBehaviour
         _mainCameraComponent = mainCamera.GetComponent<Camera>();
         mainCameraTransform = mainCamera.transform;
         _unitCameraRenderTexture = Find("UnitCameraRenderTexture");
-        _overlayRenderTexture = Find("UnitInfoRenderTextureOverlay");
+        _overlayRenderTexture = Find("UnitInfoRenderTextureOverlayImage");
 
         Find("buttonMove").GetComponent<Button>().onClick.AddListener(ProcessMoveButton);
         Find("map").GetComponent<Button>().onClick.AddListener(MiniMap.ProcessTouch);
 
-        UpdateRenderTexture();
+        SetRenderTexture();
         MiniMap.Create();
         GenerateSomeUnits();
         GenerateSomeEnemyUnits();
@@ -81,16 +81,13 @@ public class GameController : MonoBehaviour
         if (Input.GetMouseButtonDown(1))
             ProcessMoveButton();
 
-        
-#if UNITY_EDITOR
-        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() &&
-#else
-        if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(0) &&
-#endif
-        
-        
-        // if (/*_moveUnit || */ Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() &&
-            Physics.Raycast(_mainCameraComponent.ScreenPointToRay(Input.mousePosition), out _selectionHit))
+        #if UNITY_EDITOR
+            if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() &&
+        #else
+            if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(0) &&
+        #endif
+
+        Physics.Raycast(_mainCameraComponent.ScreenPointToRay(Input.mousePosition), out _selectionHit))
         {
             // This affects what can be selected and targeted
             var unitTouched = _selectionHit.collider.CompareTag("Unit") || _selectionHit.collider.CompareTag("UnitEnemy");
@@ -107,9 +104,7 @@ public class GameController : MonoBehaviour
                 else
                     _selectedObjectUnitComponent.SetTarget(_selectionHit.point);
 
-                // TODO: Redundant code, create a method.
-                Cursor.SetCursor(null, Vector2.zero, CursorMode.ForceSoftware);
-                _moveUnit = false;
+                SetMoveUnitState(false);
                 return;
             }
 
@@ -164,19 +159,26 @@ public class GameController : MonoBehaviour
         _unitCameraRenderTexture.SetActive(false);
         selectedObject = null;
         _selectedObjectUnitComponent = null;
-        _moveUnit = false;
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.ForceSoftware);
+        SetMoveUnitState(false);
     }
 
     void ProcessMoveButton()
     {
         if (!selectedObject) return;
 
-        _moveUnit = true;
+        SetMoveUnitState(true);
+    }
 
-#if UNITY_EDITOR
-        Cursor.SetCursor(mouseCursorMove, new (32, 32), CursorMode.ForceSoftware);
-#endif
+    void SetMoveUnitState(bool moveUnit)
+    {
+        _moveUnit = moveUnit;
+
+        #if UNITY_EDITOR
+            if (moveUnit)
+                Cursor.SetCursor(mouseCursorMove, new (32, 32), CursorMode.ForceSoftware);
+            else
+                Cursor.SetCursor(null, Vector2.zero, CursorMode.ForceSoftware);
+        #endif
     }
 
     public static void ProcessDestroy(GameObject obj)
@@ -195,7 +197,7 @@ public class GameController : MonoBehaviour
         Destroy(obj);
     }
 
-    void UpdateRenderTexture()
+    static void SetRenderTexture()
     {
         _overlayRenderTexture.GetComponent<RectTransform>().sizeDelta = new Vector2(Screen.width, Screen.height);
         _overlayRenderTexture.GetComponent<Image>().material.mainTexture.width = Screen.width;
