@@ -95,7 +95,7 @@ public class Unit : MonoBehaviour
         for (int i = 0; i < 1; ++i)
         {
             var tank = Instantiate(gameController.tankPrefab);
-            tank.transform.position = new Vector3(Random.value * 10, 1, Random.value * 10);
+            tank.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
             tank.transform.eulerAngles = new Vector3(0, Random.value * 360, 0);
             tank.name = $"Tank{PlayerUnits.Count}";
             PlayerUnits.Add(tank);
@@ -118,7 +118,7 @@ public class Unit : MonoBehaviour
     
     void MoveToTarget()
     {
-        if (!_target) return;
+        if (_pathPoints.Count == 0) return;
 
         UpdateIsOnGround();
 
@@ -134,7 +134,8 @@ public class Unit : MonoBehaviour
         ////  • option 1: Use Vector2.SignedAngle() & Rotate(Vector3.up)
         ////  • option 2: Use Vector3.SignedAngle() & Rotate(transform.up)  -> should be this IMHO (this is used now)
 
-        var toTargetDirection = _target.transform.position - _thisTransform.position;
+        // var toTargetDirection = _target.transform.position - _thisTransform.position;
+        var toTargetDirection = _pathPoints[0] - _thisTransform.position;  // _pathPoints[0] is actual target location
 
         /***  Movement  ***/        
         var toTargetSqrMagnitude = toTargetDirection.sqrMagnitude;
@@ -157,16 +158,17 @@ public class Unit : MonoBehaviour
         // if (toTargetSqrMagnitude < 4 && _rb.velocity.sqrMagnitude > 1)
         //     speedCoefficient = toTargetSqrMagnitude / 4f;  // TODO: Try to make the motion more fluent. Try Sqr or other value to divide by.
 
-        _rb.AddForce(_thisTransform.forward * speed * speedCoefficient, ForceMode.Impulse);
+        var forward = _thisTransform.forward;
+        _rb.AddForce(forward * speed * speedCoefficient, ForceMode.Impulse);
 
         /***  Rotation  ***/
-        var toTargetV3Flattened = _target.transform.position - _thisTransform.position;
+        var toTargetV3Flattened = _pathPoints[0] - _thisTransform.position;
         toTargetV3Flattened = new (toTargetV3Flattened.x, 0, toTargetV3Flattened.z);
 
         // var toTargetV2 = new Vector2(toTargetV3Flattened.x, toTargetV3Flattened.z);
         // var tankForwardV2 = new Vector2(transform.right.x, transform.right.z);  // It's 'right' to correctly get negative or positive value
 
-        var tankForwardFlattenedV3 = new Vector3(_thisTransform.forward.x, 0, _thisTransform.forward.z);
+        Vector3 tankForwardFlattenedV3 = new (forward.x, 0, forward.z);
 
         // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, transform.up) / 4;  // I'm not sure about rotation axis
         // var coefficient = Vector3.SignedAngle(transform.forward, toTargetV3, Vector3.up) / 4;  // I'm not sure about rotation axis
@@ -215,8 +217,15 @@ public class Unit : MonoBehaviour
 
         var targetReached = toTargetSqrMagnitude < distanceLimit;
 
-        if (targetReached && targetIsDummy)
-            UnsetDummyTarget();
+        // if (_pathPoints.Count)
+
+        if (targetReached)
+        {
+            _pathPoints.RemoveAt(0);  // Delete the reached point from stack
+
+            if (targetIsDummy && _pathPoints.Count == 0)  // Don't unset if the target is a unit
+                UnsetDummyTarget();
+        }
 
         return targetReached;
     }
@@ -509,7 +518,7 @@ public class Unit : MonoBehaviour
     }
 
     // If I understand it right, this is called when unit path is computed.
-    void ReceivePathDelegate(Path path)  // TODO: At first click, it creates one additional point at starting location
+    void ReceivePathDelegate(Path path)
     {
         _pathPoints.Clear();
 
@@ -517,7 +526,7 @@ public class Unit : MonoBehaviour
             // _path[i + 1] = path[i + path.currentIndex];  //path have accessor with indexes and node have implicit operator for vector2 and vector3. vector2 return (x,z)
             _pathPoints.Add(path[i + path.currentIndex]);
 
-        /* // For debug:
+         // For debug:
         print("════ PATH POINTS: ════");
         var pathCubesParent = Find("pathCubesParent");
         if (pathCubesParent) DestroyImmediate(pathCubesParent);
@@ -528,6 +537,6 @@ public class Unit : MonoBehaviour
             cube.transform.position = point;
             cube.transform.localScale = new (.2f, 4, .2f);
             Destroy(cube.GetComponent<BoxCollider>());
-        }*/
+        }
     }
 }
