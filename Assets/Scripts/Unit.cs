@@ -46,7 +46,7 @@ public class Unit : MonoBehaviour
 
     PathFinderAgent _pathFinderAgent;
     Path _path;
-    List<Vector3> _pathPoints = new();  // Will I use this for pathfinding?
+    readonly List<Vector3> _pathPoints = new();  // Will I use this for pathfinding?
 
     void Awake()
     {
@@ -71,7 +71,6 @@ public class Unit : MonoBehaviour
         _shieldBar = _statusInfoTransform.Find("shieldBar").transform.GetComponent<HealthBar>();
         unitCamera = cockpitTransform.Find("Camera3rdPerson").gameObject;
         unitCamera.SetActive(false);
-        Find("_pathFinderHelper").SetActive(false);  // Disable pathFinderHelper rendering
 
         SetOutlineComponents();
 
@@ -92,7 +91,7 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeUnits()
     {
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < 2; ++i)
         {
             var tank = Instantiate(gameController.tankPrefab);
             tank.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
@@ -345,6 +344,8 @@ public class Unit : MonoBehaviour
     public void SetTarget(GameObject target)
     {
         _target = target;
+        
+        FindPath(target.transform.position);
     }
 
     public void SetTarget(Vector3 target)
@@ -353,9 +354,7 @@ public class Unit : MonoBehaviour
         targetDummy.SetActive(true);
         _target = targetDummy;
 
-        /* PATHFINDING */
-        _pathFinderAgent.Update(); //this function called cause agent cache it position
-        _pathFinderAgent.SetGoalMoveHere(target); //here we requesting path
+        FindPath(target);
     }
 
     void UnsetDummyTarget()  // Can be used to unset other targets as well, with a little change (it's not necessary now).
@@ -517,6 +516,12 @@ public class Unit : MonoBehaviour
         _armorBar.UpdateParams(currentArmor / armor);
     }
 
+    void FindPath(Vector3 targetPosition)
+    {
+        _pathFinderAgent.Update(); //this function called cause agent cache it position
+        _pathFinderAgent.SetGoalMoveHere(targetPosition); //here we requesting path
+    }
+
     // If I understand it right, this is called when unit path is computed.
     void ReceivePathDelegate(Path path)
     {
@@ -526,7 +531,7 @@ public class Unit : MonoBehaviour
             // _path[i + 1] = path[i + path.currentIndex];  //path have accessor with indexes and node have implicit operator for vector2 and vector3. vector2 return (x,z)
             _pathPoints.Add(path[i + path.currentIndex]);
 
-         // For debug:
+         /*// For debug:
         print("════ PATH POINTS: ════");
         var pathCubesParent = Find("pathCubesParent");
         if (pathCubesParent) DestroyImmediate(pathCubesParent);
@@ -537,6 +542,6 @@ public class Unit : MonoBehaviour
             cube.transform.position = point;
             cube.transform.localScale = new (.2f, 4, .2f);
             Destroy(cube.GetComponent<BoxCollider>());
-        }
+        }*/
     }
 }

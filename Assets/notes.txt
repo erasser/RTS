@@ -1,4 +1,8 @@
-﻿► Bars Render Texture material is Particles/Standard Unlit :-O
+﻿► Nejsou wheel collider trochu overkill? Přicházím také o možnost nastavit tření
+
+► Bars Render Texture material is Particles/Standard Unlit :-O
+
+Fix bars position at the edges of screen
 
 Try to add & raycast simpler collider on units (and maybe on the ground?)
 

@@ -44,6 +44,7 @@ public class GameController : MonoBehaviour
         mainCameraTransform = mainCamera.transform;
         _unitCameraRenderTexture = Find("UnitCameraRenderTexture");
         _overlayRenderTexture = Find("UnitInfoRenderTextureOverlayImage");
+        Find("_pathFinderHelper").SetActive(false);  // Disable pathFinderHelper rendering
 
         Find("buttonMove").GetComponent<Button>().onClick.AddListener(ProcessMoveButton);
         Find("map").GetComponent<Button>().onClick.AddListener(MiniMap.ProcessTouch);
