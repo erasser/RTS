@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using cakeslice;
+using K_PathFinder;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using static GameController;
+using static UnityEngine.GameObject;
 
 // TODO: ► Remove Outline component from enemies
 
@@ -42,10 +44,16 @@ public class Unit : MonoBehaviour
     float _lastDamagedTime;    // Time, when unit was last damaged - serves to determine shield regeneration.
     public GameObject unitCamera;
 
+    PathFinderAgent _pathFinderAgent;
+    Path _path;
+    List<Vector3> _pathPoints = new();  // Will I use this for pathfinding?
+
     void Awake()
     {
         _thisTransform = transform;
         _rb = GetComponent<Rigidbody>();
+        _pathFinderAgent = GetComponent<PathFinderAgent>();
+        _pathFinderAgent.SetRecievePathDelegate(ReceivePathDelegate, AgentDelegateMode.ThreadSafe);  // ThreadSafe - executed in next update
         _rb.centerOfMass = Vector3.down * .1f;
         // _rb.centerOfMass = new Vector3(0, -.1f, .1f);
         _initialDrag = _rb.drag;
@@ -63,6 +71,7 @@ public class Unit : MonoBehaviour
         _shieldBar = _statusInfoTransform.Find("shieldBar").transform.GetComponent<HealthBar>();
         unitCamera = cockpitTransform.Find("Camera3rdPerson").gameObject;
         unitCamera.SetActive(false);
+        Find("_pathFinderHelper").SetActive(false);  // Disable pathFinderHelper rendering
 
         SetOutlineComponents();
 
@@ -95,6 +104,8 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeEnemyUnits()
     {
+        return;  // PathFinderAgent added just to Tank prefab for now
+
         for (int i = 0; i < 1; ++i)
         {
             var tankEnemy = Instantiate(gameController.tankEnemyPrefab);
@@ -129,7 +140,7 @@ public class Unit : MonoBehaviour
         var toTargetSqrMagnitude = toTargetDirection.sqrMagnitude;
 
         // TODO: Marge toTargetSqrMagnitude with declaration if "Slow down when near to target" is not used
-        if (CheckTargetReached(toTargetSqrMagnitude))  // target reached
+        if (CheckTargetReached(toTargetSqrMagnitude))  // Also unsets target
         {
             // if (_isOnUnit)
             // {
@@ -332,6 +343,10 @@ public class Unit : MonoBehaviour
         targetDummy.transform.position = target;
         targetDummy.SetActive(true);
         _target = targetDummy;
+
+        /* PATHFINDING */
+        _pathFinderAgent.Update(); //this function called cause agent cache it position
+        _pathFinderAgent.SetGoalMoveHere(target); //here we requesting path
     }
 
     void UnsetDummyTarget()  // Can be used to unset other targets as well, with a little change (it's not necessary now).
@@ -491,5 +506,28 @@ public class Unit : MonoBehaviour
     void UpdateArmorBar()
     {
         _armorBar.UpdateParams(currentArmor / armor);
+    }
+
+    // If I understand it right, this is called when unit path is computed.
+    void ReceivePathDelegate(Path path)  // TODO: At first click, it creates one additional point at starting location
+    {
+        _pathPoints.Clear();
+
+        for (int i = 0; i < path.count; ++i)
+            // _path[i + 1] = path[i + path.currentIndex];  //path have accessor with indexes and node have implicit operator for vector2 and vector3. vector2 return (x,z)
+            _pathPoints.Add(path[i + path.currentIndex]);
+
+        /* // For debug:
+        print("════ PATH POINTS: ════");
+        var pathCubesParent = Find("pathCubesParent");
+        if (pathCubesParent) DestroyImmediate(pathCubesParent);
+        pathCubesParent = new GameObject("pathCubesParent");
+        foreach (Vector3 point in _pathPoints) {
+            var cube = CreatePrimitive(PrimitiveType.Cube);
+            cube.transform.SetParent(pathCubesParent.transform);
+            cube.transform.position = point;
+            cube.transform.localScale = new (.2f, 4, .2f);
+            Destroy(cube.GetComponent<BoxCollider>());
+        }*/
     }
 }
