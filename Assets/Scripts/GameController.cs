@@ -25,6 +25,7 @@ public class GameController : MonoBehaviour
     RaycastHit _selectionHit;
     static GameObject _overlayRenderTexture;
     GameObject _unitCameraRenderTexture;
+    public static bool updateHostilesInRange;
 
     void Awake()
     {
@@ -65,6 +66,11 @@ public class GameController : MonoBehaviour
     void FixedUpdate()
     {
         ++fixedFrameCount;
+
+        updateHostilesInRange = fixedFrameCount % 3 == 0;  // Moved here from Unit.cs, so it's not calculated for every unit
+
+        if (fixedFrameCount % 10 == 0)
+            FindPaths();
 
         // if (!selectedObject) return;  // TODO: Remove
 

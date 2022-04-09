@@ -1,4 +1,8 @@
-﻿► Nejsou wheel collider trochu overkill? Přicházím také o možnost nastavit tření
+﻿Když jsem 2 jednotky targetil navzájem, chvíli to fungovalo, pak to spadlo
+Aby nemohla jednotka targetit sama sebe
+Zkusit rozložit regular pathfinding kalkulace v čase, dělat v dávkách pro x jednotek najednou
+
+► Nejsou wheel collider trochu overkill? Přicházím také o možnost nastavit tření
 
 ► Bars Render Texture material is Particles/Standard Unlit :-O
 

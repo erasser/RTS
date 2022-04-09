@@ -5,7 +5,6 @@ using K_PathFinder;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using static GameController;
-using static UnityEngine.GameObject;
 
 // TODO: ► Remove Outline component from enemies
 
@@ -43,10 +42,11 @@ public class Unit : MonoBehaviour
     Transform _thisTransform;  // Cached transform of this
     float _lastDamagedTime;    // Time, when unit was last damaged - serves to determine shield regeneration.
     public GameObject unitCamera;
-
+    /* pathfinding variables */
     PathFinderAgent _pathFinderAgent;
     Path _path;
-    readonly List<Vector3> _pathPoints = new();  // Will I use this for pathfinding?
+    readonly List<Vector3> _pathPoints = new();
+    static readonly List<Unit> UnitsThatNeedRegularPathUpdate = new();
 
     void Awake()
     {
@@ -79,7 +79,7 @@ public class Unit : MonoBehaviour
 
     void FixedUpdate()  // TODO: Refactor / optimize when it's done. It will be executed heavily
     {
-        if (fixedFrameCount % 3 == 0)  // Update every nth frame
+        if (updateHostilesInRange)  // Update every nth frame
             UpdateHostilesInRange();
 
         MoveToTarget();
@@ -332,39 +332,45 @@ public class Unit : MonoBehaviour
         if (outlineComponents[0].enabled == enable) return;
 
         foreach (Outline outline in outlineComponents)
-        {
             outline.enabled = enable;
-        }
     }
 
     /// <summary>
     /// Can target friendly unit to follow or hostile unit to attack
     /// </summary>
     /// <param name="target">Unit to target</param>
-    public void SetTarget(GameObject target)
+    public void SetTarget(GameObject target)  // Unis is following another unit
     {
         _target = target;
-        
+        UnitsThatNeedRegularPathUpdate.Add(this);
+
         FindPath(target.transform.position);
     }
 
-    public void SetTarget(Vector3 target)
+    public void SetTarget(Vector3 target)     // Target is a static point
     {
+        if (IsTargetAUnit())
+            UnitsThatNeedRegularPathUpdate.Remove(this);
+
+        _target = targetDummy;
         targetDummy.transform.position = target;
         targetDummy.SetActive(true);
-        _target = targetDummy;
 
         FindPath(target);
     }
 
-    void UnsetDummyTarget()  // Can be used to unset other targets as well, with a little change (it's not necessary now).
+    void UnsetDummyTarget()  // Can be used to unset another targets as well, with a little change (it's not meaningful now).
     {
-        // Target is a point in the scene (i.e. unit is not following another unit)
-        // if (targetDummy.activeSelf) 
+        // if (!IsTargetAUnit())
         // {
         targetDummy.SetActive(false);
         _target = null;
         // }
+    }
+
+    bool IsTargetAUnit()
+    {
+        return !targetDummy.activeSelf;
     }
 
     void UpdateHostilesInRange()
@@ -518,8 +524,14 @@ public class Unit : MonoBehaviour
 
     void FindPath(Vector3 targetPosition)
     {
-        _pathFinderAgent.Update(); //this function called cause agent cache it position
-        _pathFinderAgent.SetGoalMoveHere(targetPosition); //here we requesting path
+        _pathFinderAgent.Update();  //this function called cause agent cache it position
+        _pathFinderAgent.SetGoalMoveHere(targetPosition);  //here we requesting path
+    }
+
+    public static void FindPaths()  // Called regularly, just for units that need it.
+    {
+        foreach (Unit unit in UnitsThatNeedRegularPathUpdate)
+            unit.FindPath(unit._target.transform.position);
     }
 
     // If I understand it right, this is called when unit path is computed.
@@ -528,7 +540,6 @@ public class Unit : MonoBehaviour
         _pathPoints.Clear();
 
         for (int i = 0; i < path.count; ++i)
-            // _path[i + 1] = path[i + path.currentIndex];  //path have accessor with indexes and node have implicit operator for vector2 and vector3. vector2 return (x,z)
             _pathPoints.Add(path[i + path.currentIndex]);
 
          /*// For debug:
