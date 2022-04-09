@@ -188,22 +188,6 @@ public class GameController : MonoBehaviour
         #endif
     }
 
-    public static void ProcessDestroy(GameObject obj)
-    {
-        if (obj.CompareTag("Unit"))
-        {
-            Destroy(obj.GetComponent<Unit>().targetDummy);
-            PlayerUnits.Remove(obj);
-        }
-        else if (obj.CompareTag("UnitEnemy"))
-        {
-            Destroy(obj.GetComponent<Unit>().targetDummy);
-            EnemyUnits.Remove(obj);
-        }
-
-        Destroy(obj);
-    }
-
     static void SetRenderTexture()
     {
         _overlayRenderTexture.GetComponent<RectTransform>().sizeDelta = new Vector2(Screen.width, Screen.height);

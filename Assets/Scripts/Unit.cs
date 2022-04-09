@@ -91,10 +91,10 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeUnits()
     {
-        for (int i = 0; i < 2; ++i)
+        for (int i = 0; i < 3; ++i)
         {
             var tank = Instantiate(gameController.tankPrefab);
-            tank.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
+            tank.transform.position = new Vector3(Random.value * 10, 3, Random.value * 10);
             tank.transform.eulerAngles = new Vector3(0, Random.value * 360, 0);
             tank.name = $"Tank{PlayerUnits.Count}";
             PlayerUnits.Add(tank);
@@ -103,12 +103,10 @@ public class Unit : MonoBehaviour
 
     public static void GenerateSomeEnemyUnits()
     {
-        return;  // PathFinderAgent added just to Tank prefab for now
-
         for (int i = 0; i < 1; ++i)
         {
             var tankEnemy = Instantiate(gameController.tankEnemyPrefab);
-            tankEnemy.transform.position = new Vector3(Random.value * 10, 2, Random.value * 10);
+            tankEnemy.transform.position = new Vector3(Random.value * 10, 3, Random.value * 10);
             tankEnemy.transform.eulerAngles = new Vector3(0, Random.value * 360, 0);
             tankEnemy.name = $"TankEnemy{EnemyUnits.Count}";
             EnemyUnits.Add(tankEnemy);
@@ -339,8 +337,10 @@ public class Unit : MonoBehaviour
     /// Can target friendly unit to follow or hostile unit to attack
     /// </summary>
     /// <param name="target">Unit to target</param>
-    public void SetTarget(GameObject target)  // Unis is following another unit
+    public void SetTarget(GameObject target)  // Unit is following another unit
     {
+        if (gameObject == target) return;
+
         _target = target;
         UnitsThatNeedRegularPathUpdate.Add(this);
 
@@ -484,7 +484,7 @@ public class Unit : MonoBehaviour
         }
 
         if (currentArmor <= 0)
-            ProcessDestroy(gameObject);
+            ProcessDestroy();
     }
 
     void RegenerateShield()
@@ -520,6 +520,17 @@ public class Unit : MonoBehaviour
     void UpdateArmorBar()
     {
         _armorBar.UpdateParams(currentArmor / armor);
+    }
+
+    void ProcessDestroy()
+    {
+        if (CompareTag("Unit"))
+            PlayerUnits.Remove(gameObject);
+        else         // EnemyUnit
+            EnemyUnits.Remove(gameObject);
+
+        Destroy(targetDummy);
+        Destroy(gameObject);
     }
 
     void FindPath(Vector3 targetPosition)

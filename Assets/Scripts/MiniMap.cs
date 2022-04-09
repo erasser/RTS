@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using static Unit;
 using static UnityEngine.GameObject;
 using static UnityEngine.GUI;
 
@@ -58,10 +59,10 @@ public class MiniMap : MonoBehaviour
 
     public static void UpdateMap()
     {
-        foreach (var unit in Unit.EnemyUnits)
+        foreach (var unit in EnemyUnits)
             DrawUnitOnMap(unit, GameController.gameController.minimapEnemyImage);
 
-        foreach (var unit in Unit.PlayerUnits)
+        foreach (var unit in PlayerUnits)
             DrawUnitOnMap(unit,
                 unit == GameController.selectedObject
                     ? GameController.gameController.minimapSelectedUnitImage

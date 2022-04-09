@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Unit
   - UnitEnemy
+  - Ground
   layers:
   - Default
   - TransparentFX

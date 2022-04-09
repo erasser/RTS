@@ -49,13 +49,13 @@ public class WeaponLaser : MonoBehaviour
         if (Physics.Raycast(unit.cockpitTransform.position, unit.toShootTargetDirection, out RaycastHit selectionHit, distance /*, GameController.instance.groundLayer*/))
         {
             // A friendly unit or the ground is in laser's way => disable the laser
-            if (unit.IsFriendly(selectionHit.collider.gameObject) || selectionHit.collider.name == "ground")
+            if (unit.IsFriendly(selectionHit.collider.gameObject) || selectionHit.collider.CompareTag("Ground"))
             {
                 _laserGameObject.SetActive(false);
                 return;
             }
-            // Enemy non-targeted unit => hit it
-            /*else*/
+
+            // Enemy non-targeted unit crossing laser => hit it
             if (selectionHit.collider.gameObject != unit.targetToShootAt)
             {
                 SetHostileHitUnit(selectionHit.collider.gameObject);

@@ -1,6 +1,9 @@
 ﻿https://learn.unity.com/tutorial/fixing-performance-problems?&_ga=2.258500874.1421638371.1644157922-1236908546.1626543225#5c7f8528edbc2a002053b596
 
-• Try to sync FPS with FixedUpdate
+• In GameController I do (1)fixedFrameCount % 3 and (2)fixedFrameCount % 10. Výpočty jsou tedy nerovnoměrné a provádějí se v dávkách.
+    Zkusit inspectnout v profileru, zvážit rozložení kalkulací rovnoměrně do snímků. 
+    Pro případ (1) by se to mohlo řešit sledováním času (nikoli snímků) pro každou jednotku, tím by se to "statisticky rozrovnoměrnilo".
+    Pro případ (2) by se muselo vykalkulovat, které jednotky z listu mají provést pathfinding v aktuálním snímků.
 • There exists OnDemandRendering
 • LOD models (LOD Group component)
 • Mobile shader materials
