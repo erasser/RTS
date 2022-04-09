@@ -8,7 +8,7 @@ using static GameController;
 
 // TODO: ► Remove Outline component from enemies
 
-public class Unit : MonoBehaviour
+public class Unit : CachedMonoBehaviour
 {
     [Range(1, 1000)]
     public float speed = 150;
@@ -17,7 +17,6 @@ public class Unit : MonoBehaviour
     bool _isOnGround;
     bool _isOnUnit;
     float _bottomToCenterDistance;  // TODO: Implement for UpdateIsOnGround() method
-    Rigidbody _rb;
     GameObject _target;  // TODO: Should be placed on the ground to correctly detect, when the target is reached
     public GameObject targetDummy;
     public GameObject targetToShootAt;  // It's cleared after unit too far or destroyed
@@ -26,8 +25,8 @@ public class Unit : MonoBehaviour
     float _initialDrag;         // 5 is fine
     float _initialAngularDrag;  // 5 is fine (10 before, but it prevented the unit to face a target precisely, the net force was not big enough)
     // bool _moveAfterFinishedOnTopOfAnotherUnit;
-    public static readonly List<GameObject> PlayerUnits = new();
-    public static readonly List<GameObject> EnemyUnits = new();
+    public static readonly List<Unit> PlayerUnits = new();
+    public static readonly List<Unit> EnemyUnits = new();
     List<GameObject> _hostilesInRange = new(); // For enemy, player is hostile. For player, enemy is hostile. TODO: Not used.
     public Transform cockpitTransform;
     public Transform cannonSocketTransform;
@@ -39,7 +38,6 @@ public class Unit : MonoBehaviour
     Transform _statusInfoTransform;
     HealthBar _armorBar;
     HealthBar _shieldBar;
-    Transform _thisTransform;  // Cached transform of this
     float _lastDamagedTime;    // Time, when unit was last damaged - serves to determine shield regeneration.
     public GameObject unitCamera;
     /* pathfinding variables */
@@ -48,25 +46,22 @@ public class Unit : MonoBehaviour
     readonly List<Vector3> _pathPoints = new();
     static readonly List<Unit> UnitsThatNeedRegularPathUpdate = new();
 
-    void Awake()
+    void Start()
     {
-        _thisTransform = transform;
-        _rb = GetComponent<Rigidbody>();
-        _pathFinderAgent = GetComponent<PathFinderAgent>();
+        _pathFinderAgent = gameObjectCached.GetComponent<PathFinderAgent>();
         _pathFinderAgent.SetRecievePathDelegate(ReceivePathDelegate, AgentDelegateMode.ThreadSafe);  // ThreadSafe - executed in next update
-        _rb.centerOfMass = Vector3.down * .1f;
-        // _rb.centerOfMass = new Vector3(0, -.1f, .1f);
-        _initialDrag = _rb.drag;
-        _initialAngularDrag = _rb.angularDrag;
+        rigidBody.centerOfMass = Vector3.down * .1f; // _rb.centerOfMass = new Vector3(0, -.1f, .1f);
+        _initialDrag = rigidBody.drag;
+        _initialAngularDrag = rigidBody.angularDrag;
         targetDummy = Instantiate(gameController.targetPrefab);
-        cockpitTransform = _thisTransform.Find("cockpit001");
+        cockpitTransform = transformCached.Find("cockpit001");
         cannonSocketTransform = cockpitTransform.Find("cannonsSockets001");
         /***  Weapons  ***/
-        laser = GetComponent<WeaponLaser>();
+        laser = gameObjectCached.GetComponent<WeaponLaser>();
         laser.unit = this;
         currentArmor = armor;
         currentShield = shield;
-        _statusInfoTransform = _thisTransform.Find("UnitStatus").transform;
+        _statusInfoTransform = transformCached.Find("UnitStatus").transform;
         _armorBar = _statusInfoTransform.Find("armorBar").transform.GetComponent<HealthBar>();
         _shieldBar = _statusInfoTransform.Find("shieldBar").transform.GetComponent<HealthBar>();
         unitCamera = cockpitTransform.Find("Camera3rdPerson").gameObject;
@@ -94,10 +89,11 @@ public class Unit : MonoBehaviour
         for (int i = 0; i < 3; ++i)
         {
             var tank = Instantiate(gameController.tankPrefab);
-            tank.transform.position = new Vector3(Random.value * 10, 3, Random.value * 10);
-            tank.transform.eulerAngles = new Vector3(0, Random.value * 360, 0);
-            tank.name = $"Tank{PlayerUnits.Count}";
-            PlayerUnits.Add(tank);
+            var tankUnit = tank.GetComponent<Unit>();
+            tankUnit.transformCached.position = new Vector3(Random.value * 10, 3, Random.value * 10);
+            tankUnit.transformCached.eulerAngles = new Vector3(0, Random.value * 360, 0);
+            tankUnit.name = $"Tank{PlayerUnits.Count}";
+            PlayerUnits.Add(tankUnit);
         }
     }
 
@@ -106,10 +102,11 @@ public class Unit : MonoBehaviour
         for (int i = 0; i < 1; ++i)
         {
             var tankEnemy = Instantiate(gameController.tankEnemyPrefab);
-            tankEnemy.transform.position = new Vector3(Random.value * 10, 3, Random.value * 10);
-            tankEnemy.transform.eulerAngles = new Vector3(0, Random.value * 360, 0);
-            tankEnemy.name = $"TankEnemy{EnemyUnits.Count}";
-            EnemyUnits.Add(tankEnemy);
+            var tankEnemyUnit = tankEnemy.GetComponent<Unit>();
+            tankEnemyUnit.transformCached.position = new Vector3(Random.value * 10, 3, Random.value * 10);
+            tankEnemyUnit.transformCached.eulerAngles = new Vector3(0, Random.value * 360, 0);
+            tankEnemyUnit.name = $"TankEnemy{EnemyUnits.Count}";
+            EnemyUnits.Add(tankEnemyUnit);
         }
     }
     
@@ -132,7 +129,7 @@ public class Unit : MonoBehaviour
         ////  • option 2: Use Vector3.SignedAngle() & Rotate(transform.up)  -> should be this IMHO (this is used now)
 
         // var toTargetDirection = _target.transform.position - _thisTransform.position;
-        var toTargetDirection = _pathPoints[0] - _thisTransform.position;  // _pathPoints[0] is actual target location
+        var toTargetDirection = _pathPoints[0] - transformCached.position;  // _pathPoints[0] is actual target location
 
         /***  Movement  ***/        
         var toTargetSqrMagnitude = toTargetDirection.sqrMagnitude;
@@ -155,11 +152,11 @@ public class Unit : MonoBehaviour
         // if (toTargetSqrMagnitude < 4 && _rb.velocity.sqrMagnitude > 1)
         //     speedCoefficient = toTargetSqrMagnitude / 4f;  // TODO: Try to make the motion more fluent. Try Sqr or other value to divide by.
 
-        var forward = _thisTransform.forward;
-        _rb.AddForce(forward * speed * speedCoefficient, ForceMode.Impulse);
+        var forward = transformCached.forward;
+        rigidBody.AddForce(forward * speed * speedCoefficient, ForceMode.Impulse);
 
         /***  Rotation  ***/
-        var toTargetV3Flattened = _pathPoints[0] - _thisTransform.position;
+        var toTargetV3Flattened = _pathPoints[0] - transformCached.position;
         toTargetV3Flattened = new (toTargetV3Flattened.x, 0, toTargetV3Flattened.z);
 
         // var toTargetV2 = new Vector2(toTargetV3Flattened.x, toTargetV3Flattened.z);
@@ -181,7 +178,7 @@ public class Unit : MonoBehaviour
         // Rotate faster when initiating movement  // TODO: Try to rotate without movement. I don't know how to solve it because of wheel colliders.
         angleCoefficient *= Math.Abs(angle) > 10 ? .9f : .3f;
 
-        _rb.AddTorque(_thisTransform.up * angleCoefficient, ForceMode.Impulse);
+        rigidBody.AddTorque(transformCached.up * angleCoefficient, ForceMode.Impulse);
         // rb.transform.Rotate(Vector3.up * coefficient);  // TODO: What if collision will occur? - It seems good
         // rb.transform.Rotate(transform.up * coefficient);  // seká se
         
@@ -234,7 +231,7 @@ public class Unit : MonoBehaviour
     
     void UpdateIsOnGround()
     {
-        if (Physics.Raycast(_thisTransform.position, - _thisTransform.up, out RaycastHit groundHit, gameController.groundLayer))
+        if (Physics.Raycast(transformCached.position, - transformCached.up, out RaycastHit groundHit, gameController.groundLayer))
         {
             if (groundHit.distance < .3f)
             {
@@ -302,14 +299,14 @@ public class Unit : MonoBehaviour
         if (enable)
         {
             _isOnGround = true;
-            _rb.drag = _initialDrag;
-            _rb.angularDrag = _initialAngularDrag;
+            rigidBody.drag = _initialDrag;
+            rigidBody.angularDrag = _initialAngularDrag;
         }
         else
         {
             _isOnGround = false;
-            _rb.drag = 0;
-            _rb.angularDrag = 0;
+            rigidBody.drag = 0;
+            rigidBody.angularDrag = 0;
         }
     }
 
@@ -337,7 +334,7 @@ public class Unit : MonoBehaviour
     /// Can target friendly unit to follow or hostile unit to attack
     /// </summary>
     /// <param name="target">Unit to target</param>
-    public void SetTarget(GameObject target)  // Unit is following another unit
+    public void SetTarget(GameObject target)  // Unit is following another unit or a dummy target
     {
         if (gameObject == target) return;
 
@@ -381,26 +378,26 @@ public class Unit : MonoBehaviour
         // _hostilesInRange.Clear();
         foreach (var hostile in hostilesList)
         {
-            var sqrDistance = (hostile.transform.position - _thisTransform.position).sqrMagnitude;
+            var sqrDistance = (hostile.transformCached.position - transformCached.position).sqrMagnitude;
             // Fills the list with hostiles in range
             if (sqrDistance < _hostileSqrDistanceLimit)
             {
                 // _hostilesInRange.Add(hostile);
 
                 // Unit is heading for this hostile. Hostile now in range => set it as a target to shoot at.
-                if (_target == hostile)
-                    targetToShootAt = hostile;
+                if (_target == hostile.gameObjectCached)
+                    targetToShootAt = hostile.gameObjectCached;
 
                 // This hostile unit is closest hostile for now.
                 // Do this only if unit doesn't have a shoot target, so the current target is not overwritten.
                 else if (!targetToShootAt && sqrDistance < smallestSqrDistance)
                 {
                     smallestSqrDistance = sqrDistance;
-                    targetToShootAt = hostile;
+                    targetToShootAt = hostile.gameObjectCached;
                     // _laser.SetActive(true);  // Use this if ground raycast is not used in UpdateShootLaser() 
                 }
             }
-            else if (hostile == targetToShootAt)  // Clear shoot target if too far
+            else if (targetToShootAt == hostile.gameObjectCached)  // Clear shoot target if too far
             {
                 targetToShootAt = null;
                 // _laser.SetActive(false);
@@ -525,9 +522,9 @@ public class Unit : MonoBehaviour
     void ProcessDestroy()
     {
         if (CompareTag("Unit"))
-            PlayerUnits.Remove(gameObject);
+            PlayerUnits.Remove(this);
         else         // EnemyUnit
-            EnemyUnits.Remove(gameObject);
+            EnemyUnits.Remove(this);
 
         Destroy(targetDummy);
         Destroy(gameObject);

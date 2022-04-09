@@ -4,6 +4,7 @@
     Zkusit inspectnout v profileru, zvážit rozložení kalkulací rovnoměrně do snímků. 
     Pro případ (1) by se to mohlo řešit sledováním času (nikoli snímků) pro každou jednotku, tím by se to "statisticky rozrovnoměrnilo".
     Pro případ (2) by se muselo vykalkulovat, které jednotky z listu mají provést pathfinding v aktuálním snímků.
+    ! Změřit, kolik času zabere path finding (použít DateTimeOffset.Now.ToUnixTimeMilliseconds())
 • There exists OnDemandRendering
 • LOD models (LOD Group component)
 • Mobile shader materials

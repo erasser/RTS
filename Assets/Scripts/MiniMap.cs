@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using static GameController;
 using static Unit;
 using static UnityEngine.GameObject;
 using static UnityEngine.GUI;
@@ -18,7 +19,7 @@ public class MiniMap : MonoBehaviour
     {
         var mapImage = Find("map");
         // var mapSizeV2 = mapImage.GetComponent<RectTransform>().rect;
-        mapImage.GetComponent<RectTransform>().sizeDelta = new (Screen.width / 8, Screen.width / 8);
+        mapImage.GetComponent<RectTransform>().sizeDelta = new (Screen.width / 8f, Screen.width / 8f);
         var mapSizeV2 = mapImage.GetComponent<RectTransform>().sizeDelta;
         // Debug.Log(mapSizeV2);
         _minimapViewRect = Find("minimapViewRect");
@@ -60,13 +61,13 @@ public class MiniMap : MonoBehaviour
     public static void UpdateMap()
     {
         foreach (var unit in EnemyUnits)
-            DrawUnitOnMap(unit, GameController.gameController.minimapEnemyImage);
+            DrawUnitOnMap(unit.gameObjectCached, gameController.minimapEnemyImage);
 
         foreach (var unit in PlayerUnits)
-            DrawUnitOnMap(unit,
-                unit == GameController.selectedObject
-                    ? GameController.gameController.minimapSelectedUnitImage
-                    : GameController.gameController.minimapPlayerImage);
+            DrawUnitOnMap(unit.gameObjectCached,
+                unit.gameObjectCached == selectedObject
+                    ? gameController.minimapSelectedUnitImage
+                    : gameController.minimapPlayerImage);
     }
 
     static void DrawUnitOnMap(GameObject unit, Texture texture)  // This could be probably declared in UpdateMap(). IDK if it's not redeclared many times there.
@@ -86,10 +87,10 @@ public class MiniMap : MonoBehaviour
         Vector2 worldCoords = new((pointerCoords.x - _mapSizeHalf.x) * _mapRatio.x, -((pointerCoords.y - _mapSizeHalf.y) * _mapRatio.y));
         // TODO: ►  ↑ Zde jsem skončil, vyjasnit si násobení / dělení _mapRatio
 
-        var cameraPosition = GameController.mainCamera.transform.position;
+        var cameraPosition = mainCamera.transform.position;
         cameraPosition.x = worldCoords.x;
         cameraPosition.z = worldCoords.y;
-        GameController.mainCamera.transform.position = cameraPosition;
+        mainCamera.transform.position = cameraPosition;
 
         var minimapViewRectViewRectTransform = _minimapViewRect.GetComponent<RectTransform>();
         minimapViewRectViewRectTransform.transform.position = new Vector3(pointerCoords.x, Screen.height - pointerCoords.y, 0);

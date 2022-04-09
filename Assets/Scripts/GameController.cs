@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using static MiniMap;
 using static Unit;
 using static UnityEngine.GameObject;
 
@@ -51,7 +52,7 @@ public class GameController : MonoBehaviour
         Find("map").GetComponent<Button>().onClick.AddListener(MiniMap.ProcessTouch);
 
         SetRenderTexture();
-        MiniMap.Create();
+        Create();
         GenerateSomeUnits();
         GenerateSomeEnemyUnits();
     }
@@ -67,7 +68,7 @@ public class GameController : MonoBehaviour
     {
         ++fixedFrameCount;
 
-        updateHostilesInRange = fixedFrameCount % 3 == 0;  // Moved here from Unit.cs, so it's not calculated for every unit
+        updateHostilesInRange = fixedFrameCount % 5 == 0;  // Moved here from Unit.cs, so it's not calculated for every unit
 
         if (fixedFrameCount % 10 == 0)
             FindPaths();
@@ -80,7 +81,8 @@ public class GameController : MonoBehaviour
 
     void OnGUI()
     {
-        MiniMap.UpdateMap();
+        if (fixedFrameCount % 20 == 0)  // % 20 corresponds with .5 s (with current 0.025 time step setting)
+            UpdateMap();
     }
 
     void ProcessTouch()
