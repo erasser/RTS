@@ -20,12 +20,13 @@ public class GameController : MonoBehaviour
     static Camera _mainCameraComponent;
     public static Transform mainCameraTransform;
     public static GameObject selectedObject;
+    static Selectable _selectedObjectSelectableComponent;
     static Unit _selectedObjectUnitComponent;
     static bool _moveUnit;
     public static int fixedFrameCount;
     RaycastHit _selectionHit;
     static GameObject _overlayRenderTexture;
-    GameObject _unitCameraRenderTexture;
+    static GameObject _unitCameraRenderTexture;
     public static bool updateHostilesInRange;
 
     void Awake()
@@ -81,16 +82,15 @@ public class GameController : MonoBehaviour
 
     void OnGUI()
     {
-        if (fixedFrameCount % 20 == 0)  // % 20 corresponds with .5 s (with current 0.025 time step setting)
-            UpdateMap();
+        UpdateMap();
     }
 
     void ProcessTouch()
     {
-        if (Input.GetMouseButtonDown(1))
-            ProcessMoveButton();
-
         #if UNITY_EDITOR
+            if (Input.GetMouseButtonDown(1))
+                ProcessMoveButton();
+
             if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject() &&
         #else
             if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(0) &&
@@ -98,17 +98,20 @@ public class GameController : MonoBehaviour
 
         Physics.Raycast(_mainCameraComponent.ScreenPointToRay(Input.mousePosition), out _selectionHit))
         {
+            var collidedObject = _selectionHit.collider.gameObject;
+
             // This affects what can be selected and targeted
-            var unitTouched = _selectionHit.collider.CompareTag("Unit") || _selectionHit.collider.CompareTag("UnitEnemy");
+            var unitTouched = collidedObject.CompareTag("Unit") || collidedObject.CompareTag("UnitEnemy");
+            var buildingTouched = collidedObject.CompareTag("Building");
 
             /*  Move unit  */
-            if (_moveUnit)
+            if (_moveUnit)  // TODO: Solve for building
             {
-                if (unitTouched)
+                if (unitTouched && !buildingTouched)
                 {
-                    _selectedObjectUnitComponent.SetTarget(_selectionHit.collider.gameObject);
-                    if (!_selectedObjectUnitComponent.IsFriendly(_selectionHit.collider.gameObject))
-                        _selectedObjectUnitComponent.targetToShootAt = _selectionHit.collider.gameObject;
+                    _selectedObjectUnitComponent.SetTarget(collidedObject);
+                    if (!_selectedObjectUnitComponent.IsFriendly(collidedObject))
+                        _selectedObjectUnitComponent.targetToShootAt = collidedObject;
                 }
                 else
                     _selectedObjectUnitComponent.SetTarget(_selectionHit.point);
@@ -118,8 +121,8 @@ public class GameController : MonoBehaviour
             }
 
             /*  Select / unselect unit  */
-            if (unitTouched)
-                SelectObject(_selectionHit.collider.gameObject);
+            if (unitTouched || buildingTouched)
+                SelectObject(collidedObject);
             else
                 UnselectObject();
         }
@@ -148,17 +151,18 @@ public class GameController : MonoBehaviour
         }
     }
     
-    void SelectObject(GameObject obj)
+    static void SelectObject(GameObject obj)
     {
         if (Equals(selectedObject, obj)) return;
 
         UnselectObject();
 
         selectedObject = obj;
+        _selectedObjectSelectableComponent = obj.GetComponent<Selectable>();
+        _selectedObjectSelectableComponent.ToggleOutline(true);
         _selectedObjectUnitComponent = obj.GetComponent<Unit>();
         if (_selectedObjectUnitComponent)
         {
-            _selectedObjectUnitComponent.ToggleOutline(true);
             _selectedObjectUnitComponent.unitCamera.SetActive(true);
 
             if (_selectedObjectUnitComponent.IsTargetADummy())
@@ -167,13 +171,15 @@ public class GameController : MonoBehaviour
         _unitCameraRenderTexture.SetActive(true);
     }
 
-    void UnselectObject()
+    public static void UnselectObject()
     {
         if (!selectedObject) return;
 
+        _selectedObjectSelectableComponent.ToggleOutline(false);
+        _selectedObjectSelectableComponent = null;
+
         if (_selectedObjectUnitComponent)
         {
-            _selectedObjectUnitComponent.ToggleOutline(false);
             _selectedObjectUnitComponent.unitCamera.SetActive(false);
             _selectedObjectUnitComponent.targetDummy.SetActive(false);
             _selectedObjectUnitComponent = null;
@@ -185,18 +191,18 @@ public class GameController : MonoBehaviour
 
     void ProcessMoveButton()
     {
-        if (!selectedObject) return;
+        if (!selectedObject || selectedObject.CompareTag("Building")) return;
 
         SetMoveUnitState(true);
     }
 
-    void SetMoveUnitState(bool moveUnit)
+    static void SetMoveUnitState(bool moveUnit)
     {
         _moveUnit = moveUnit;
 
         #if UNITY_EDITOR
             if (moveUnit)
-                Cursor.SetCursor(mouseCursorMove, new (32, 32), CursorMode.ForceSoftware);
+                Cursor.SetCursor(gameController.mouseCursorMove, new (32, 32), CursorMode.ForceSoftware);
             else
                 Cursor.SetCursor(null, Vector2.zero, CursorMode.ForceSoftware);
         #endif

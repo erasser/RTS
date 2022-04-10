@@ -1,9 +1,29 @@
-﻿► Když jsem 2 jednotky targetil navzájem, chvíli to fungovalo, pak to spadlo
-Zkusit rozložit regular pathfinding kalkulace v čase, dělat v dávkách pro x jednotek najednou
+﻿vytváření jednotek
+
+Test performance:  Equals vs ==
+(comparing GameObjects)
+
+Nyní může být objekt poslán k většímu objektu - upravit řešení vzdálenosti k targetu podle velikosti targetu. Pozor, týká se targetů typu Unit i dummyTarget. dummyTarget může být umístěň např. na budovu. Bude to asi chtít uložit tu hodnotu do proměnné při selectnutí targetu.
+Bude to chtít rozšířit volání metody o kliknutý objekt: _selectedObjectUnitComponent.SetTarget(_selectionHit.point, ...);
+
+Co se stane po zničení jednotky, když jednotka je targetem?
+
+Asi by se mělo při zničení jednotky clearnout i _hostileHitUnit? Nebo se to clearne samo po Destroy?
+
+K čemu je dobrý layer Ground?
+
+Přenést hledání submodelů do editoru jako public pole - ponechat typ Transform
+
+► POZOR! Jednotka jezdí i po střeše a navíc pěkně napiču :D
+
+► Když jsem 2 jednotky targetil navzájem, chvíli to fungovalo, pak to spadlo
 
 ► Nejsou wheel collider trochu overkill? Přicházím také o možnost nastavit tření
 
 ► Bars Render Texture material is Particles/Standard Unlit :-O
+
+Remove Outline component from enemies
+Ensure that enemies can't be selected, i.e. not containing Selectable component
 
 Fix bars position at the edges of screen
 

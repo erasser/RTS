@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using cakeslice;
 using K_PathFinder;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using static GameController;
-
-// TODO: ► Remove Outline component from enemies
 
 public class Unit : CachedMonoBehaviour
 {
@@ -21,7 +18,6 @@ public class Unit : CachedMonoBehaviour
     public GameObject targetDummy;
     public GameObject targetToShootAt;  // It's cleared after unit too far or destroyed
     public Vector3 toShootTargetDirection;  // Cached, because it's used many times  // TODO: Consider moving to WeaponLaser, if it's used just for laser.
-    public List<Outline> outlineComponents = new();
     float _initialDrag;         // 5 is fine
     float _initialAngularDrag;  // 5 is fine (10 before, but it prevented the unit to face a target precisely, the net force was not big enough)
     // bool _moveAfterFinishedOnTopOfAnotherUnit;
@@ -68,8 +64,6 @@ public class Unit : CachedMonoBehaviour
         _shieldBar = _statusInfoTransform.Find("shieldBar").transform.GetComponent<HealthBar>();
         unitCamera = cockpitTransform.Find("Camera3rdPerson").gameObject;
         unitCamera.SetActive(false);
-
-        SetOutlineComponents();
 
         SetBottomToCenterDistance();
     }
@@ -157,7 +151,7 @@ public class Unit : CachedMonoBehaviour
         //     speedCoefficient = toTargetSqrMagnitude / 4f;  // TODO: Try to make the motion more fluent. Try Sqr or other value to divide by.
 
         var forward = transformCached.forward;
-        rigidBody.AddForce(forward * speed * speedCoefficient, ForceMode.Impulse);
+        rigidBody.AddForce(speed * speedCoefficient * forward, ForceMode.Impulse);
 
         /***  Rotation  ***/
         var toTargetV3Flattened = _pathPoints[0] - transformCached.position;
@@ -314,33 +308,13 @@ public class Unit : CachedMonoBehaviour
         }
     }
 
-    void SetOutlineComponents()
-    {
-        foreach (Transform child in GetComponentsInChildren<Transform>())  // Get all children recursively
-        {
-            var outlineComponent = child.GetComponent<Outline>();
-            if (!outlineComponent) continue;
-
-            outlineComponents.Add(outlineComponent);
-            outlineComponent.enabled = false;
-        }
-    }
-
-    public void ToggleOutline(bool enable)
-    {
-        if (outlineComponents[0].enabled == enable) return;
-
-        foreach (Outline outline in outlineComponents)
-            outline.enabled = enable;
-    }
-
     /// <summary>
     /// Can target friendly unit to follow or hostile unit to attack
     /// </summary>
     /// <param name="target">Unit to target</param>
     public void SetTarget(GameObject target)  // Unit is following another unit or a dummy target
     {
-        if (gameObject == target) return;
+        if (Equals(gameObject, target)) return;
 
         _target = target;
         UnitsThatNeedRegularPathUpdate.Add(this);

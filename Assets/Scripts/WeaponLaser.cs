@@ -79,7 +79,7 @@ public class WeaponLaser : MonoBehaviour
 
     void SetHostileHitUnit(GameObject unitGameObject)
     {
-        if (_hostileHitUnitGameObject && _hostileHitUnitGameObject == unitGameObject) return;
+        if (_hostileHitUnitGameObject && Equals(_hostileHitUnitGameObject, unitGameObject)) return;
 
         _hostileHitUnitGameObject = unitGameObject;
         _hostileHitUnit = unitGameObject.GetComponent<Unit>();
