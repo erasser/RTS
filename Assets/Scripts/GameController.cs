@@ -128,21 +128,23 @@ public class GameController : MonoBehaviour
     void ProcessKeys()
     {
         if (Input.GetKey(KeyCode.W))
-            mainCamera.transform.Translate(Vector3.forward * .1f, Space.World);
+            mainCameraTransform.Translate(Vector3.forward * .1f, Space.World);
         if (Input.GetKey(KeyCode.S))
-            mainCamera.transform.Translate(Vector3.back * .1f, Space.World);
+            mainCameraTransform.Translate(Vector3.back * .1f, Space.World);
         if (Input.GetKey(KeyCode.A))
-            mainCamera.transform.Translate(Vector3.left * .1f);
+            mainCameraTransform.Translate(Vector3.left * .1f);
         if (Input.GetKey(KeyCode.D))
-            mainCamera.transform.Translate(Vector3.right * .1f);
+            mainCameraTransform.Translate(Vector3.right * .1f);
         var scroll = Input.mouseScrollDelta.y;
 
         if (scroll != 0)
         {
-            mainCamera.transform.Translate(Vector3.forward * scroll);
-            var y = mainCamera.transform.position.y;
+            mainCameraTransform.Translate(Vector3.forward * scroll);
+            var position = mainCameraTransform.position;
+            var y = position.y;
             y = Mathf.Clamp(y, 4, 40);
-            mainCamera.transform.position = new Vector3(mainCamera.transform.position.x, y, mainCamera.transform.position.z);
+            position = new Vector3(position.x, y, position.z);
+            mainCameraTransform.position = position;
         }
     }
     

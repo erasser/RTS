@@ -87,10 +87,10 @@ public class MiniMap : MonoBehaviour
         Vector2 worldCoords = new((pointerCoords.x - _mapSizeHalf.x) * _mapRatio.x, -((pointerCoords.y - _mapSizeHalf.y) * _mapRatio.y));
         // TODO: ►  ↑ Zde jsem skončil, vyjasnit si násobení / dělení _mapRatio
 
-        var cameraPosition = mainCamera.transform.position;
+        var cameraPosition = mainCameraTransform.position;
         cameraPosition.x = worldCoords.x;
         cameraPosition.z = worldCoords.y;
-        mainCamera.transform.position = cameraPosition;
+        mainCameraTransform.position = cameraPosition;
 
         var minimapViewRectViewRectTransform = _minimapViewRect.GetComponent<RectTransform>();
         minimapViewRectViewRectTransform.transform.position = new Vector3(pointerCoords.x, Screen.height - pointerCoords.y, 0);
