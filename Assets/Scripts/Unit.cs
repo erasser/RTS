@@ -45,6 +45,8 @@ public class Unit : CachedMonoBehaviour
     Path _path;
     readonly List<Vector3> _pathPoints = new();
     static readonly List<Unit> UnitsThatNeedRegularPathUpdate = new();
+    [HideInInspector]
+    public bool isPlayerUnit;
 
     void Start()
     {
@@ -93,6 +95,7 @@ public class Unit : CachedMonoBehaviour
             tankUnit.transformCached.position = new Vector3(Random.value * 10, 3, Random.value * 10);
             tankUnit.transformCached.eulerAngles = new Vector3(0, Random.value * 360, 0);
             tankUnit.name = $"Tank{PlayerUnits.Count}";
+            tankUnit.isPlayerUnit = true;
             PlayerUnits.Add(tankUnit);
         }
     }
@@ -106,6 +109,7 @@ public class Unit : CachedMonoBehaviour
             tankEnemyUnit.transformCached.position = new Vector3(Random.value * 10, 3, Random.value * 10);
             tankEnemyUnit.transformCached.eulerAngles = new Vector3(0, Random.value * 360, 0);
             tankEnemyUnit.name = $"TankEnemy{EnemyUnits.Count}";
+            tankEnemyUnit.isPlayerUnit = false;
             EnemyUnits.Add(tankEnemyUnit);
         }
     }
@@ -346,7 +350,7 @@ public class Unit : CachedMonoBehaviour
 
     public void SetTarget(Vector3 target)     // Target is a static point
     {
-        if (IsTargetAUnit())
+        if (!IsTargetADummy())
             UnitsThatNeedRegularPathUpdate.Remove(this);
 
         _target = targetDummy;
@@ -358,21 +362,21 @@ public class Unit : CachedMonoBehaviour
 
     void UnsetDummyTarget()  // Can be used to unset another targets as well, with a little change (it's not meaningful now).
     {
-        // if (!IsTargetAUnit())
+        // if (IsTargetADummy())
         // {
         targetDummy.SetActive(false);
         _target = null;
         // }
     }
 
-    bool IsTargetAUnit()
+    public bool IsTargetADummy()
     {
-        return !targetDummy.activeSelf;
+        return _target == targetDummy;
     }
 
     void UpdateHostilesInRange()
     {
-        var hostilesList = CompareTag("Unit") ? EnemyUnits : PlayerUnits;
+        var hostilesList = isPlayerUnit ? EnemyUnits : PlayerUnits;
 
         float smallestSqrDistance = 1000000000;
         // _hostilesInRange.Clear();
@@ -521,9 +525,9 @@ public class Unit : CachedMonoBehaviour
 
     void ProcessDestroy()
     {
-        if (CompareTag("Unit"))
+        if (isPlayerUnit)
             PlayerUnits.Remove(this);
-        else         // EnemyUnit
+        else
             EnemyUnits.Remove(this);
 
         Destroy(targetDummy);

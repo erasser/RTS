@@ -154,8 +154,14 @@ public class GameController : MonoBehaviour
 
         selectedObject = obj;
         _selectedObjectUnitComponent = obj.GetComponent<Unit>();
-        _selectedObjectUnitComponent.ToggleOutline(true);
-        _selectedObjectUnitComponent.unitCamera.SetActive(true);
+        if (_selectedObjectUnitComponent)
+        {
+            _selectedObjectUnitComponent.ToggleOutline(true);
+            _selectedObjectUnitComponent.unitCamera.SetActive(true);
+
+            if (_selectedObjectUnitComponent.IsTargetADummy())
+                _selectedObjectUnitComponent.targetDummy.SetActive(true);
+        }
         _unitCameraRenderTexture.SetActive(true);
     }
 
@@ -163,11 +169,15 @@ public class GameController : MonoBehaviour
     {
         if (!selectedObject) return;
 
-        _selectedObjectUnitComponent.ToggleOutline(false);
-        _selectedObjectUnitComponent.unitCamera.SetActive(false);
+        if (_selectedObjectUnitComponent)
+        {
+            _selectedObjectUnitComponent.ToggleOutline(false);
+            _selectedObjectUnitComponent.unitCamera.SetActive(false);
+            _selectedObjectUnitComponent.targetDummy.SetActive(false);
+            _selectedObjectUnitComponent = null;
+        }
         _unitCameraRenderTexture.SetActive(false);
         selectedObject = null;
-        _selectedObjectUnitComponent = null;
         SetMoveUnitState(false);
     }
 
