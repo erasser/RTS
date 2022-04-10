@@ -1,4 +1,10 @@
-﻿vytváření jednotek
+﻿Follow kameru udělat always vodorovnou
+
+Přidat něco jako rally points grid, kam se budou kupit jednotky - optimálně by se mohlo generovat automaticky?
+
+Při max zoomu se kamera posouvá
+
+Implement creating of enemy units - try to use one prefab with different materials
 
 Test performance:  Equals vs ==
 (comparing GameObjects)
@@ -15,10 +21,9 @@ K čemu je dobrý layer Ground?
 Přenést hledání submodelů do editoru jako public pole - ponechat typ Transform
 
 ► POZOR! Jednotka jezdí i po střeše a navíc pěkně napiču :D
+► Nejsou wheel collider trochu overkill? Přicházím také o možnost nastavit tření
 
 ► Když jsem 2 jednotky targetil navzájem, chvíli to fungovalo, pak to spadlo
-
-► Nejsou wheel collider trochu overkill? Přicházím také o možnost nastavit tření
 
 ► Bars Render Texture material is Particles/Standard Unlit :-O
 

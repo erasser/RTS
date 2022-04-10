@@ -8,22 +8,20 @@ using static UnityEngine.GameObject;
 public class GameController : MonoBehaviour
 {
     public static GameController gameController;  // Instance of singleton
-    public GameObject tankPrefab;
-    public GameObject tankEnemyPrefab;
     public GameObject targetPrefab;
     public Texture2D mouseCursorMove;
     public LayerMask groundLayer;  // Used to determine if a unit is on the ground
     public Texture minimapPlayerImage;
     public Texture minimapEnemyImage;
     public Texture minimapSelectedUnitImage;
-    public static GameObject mainCamera;
+    static GameObject _mainCamera;
     static Camera _mainCameraComponent;
     public static Transform mainCameraTransform;
     public static GameObject selectedObject;
     static Selectable _selectedObjectSelectableComponent;
     static Unit _selectedObjectUnitComponent;
     static bool _moveUnit;
-    public static int fixedFrameCount;
+    static int _fixedFrameCount;
     RaycastHit _selectionHit;
     static GameObject _overlayRenderTexture;
     static GameObject _unitCameraRenderTexture;
@@ -42,9 +40,9 @@ public class GameController : MonoBehaviour
 
     void Start()
     {
-        mainCamera = Find("Camera");
-        _mainCameraComponent = mainCamera.GetComponent<Camera>();
-        mainCameraTransform = mainCamera.transform;
+        _mainCamera = Find("Camera");
+        _mainCameraComponent = _mainCamera.GetComponent<Camera>();
+        mainCameraTransform = _mainCamera.transform;
         _unitCameraRenderTexture = Find("UnitCameraRenderTexture");
         _overlayRenderTexture = Find("UnitInfoRenderTextureOverlayImage");
         Find("_pathFinderHelper").SetActive(false);  // Disable pathFinderHelper rendering
@@ -54,8 +52,6 @@ public class GameController : MonoBehaviour
 
         SetRenderTexture();
         Create();
-        GenerateSomeUnits();
-        GenerateSomeEnemyUnits();
     }
 
     void Update()
@@ -67,11 +63,11 @@ public class GameController : MonoBehaviour
 
     void FixedUpdate()
     {
-        ++fixedFrameCount;
+        ++_fixedFrameCount;
 
-        updateHostilesInRange = fixedFrameCount % 5 == 0;  // Moved here from Unit.cs, so it's not calculated for every unit
+        updateHostilesInRange = _fixedFrameCount % 5 == 0;  // Moved here from Unit.cs, so it's not calculated for every unit
 
-        if (fixedFrameCount % 10 == 0)
+        if (_fixedFrameCount % 10 == 0)
             FindPaths();
 
         // if (!selectedObject) return;  // TODO: Remove
@@ -130,14 +126,17 @@ public class GameController : MonoBehaviour
 
     void ProcessKeys()
     {
-        if (Input.GetKey(KeyCode.W))
-            mainCameraTransform.Translate(Vector3.forward * .1f, Space.World);
-        if (Input.GetKey(KeyCode.S))
-            mainCameraTransform.Translate(Vector3.back * .1f, Space.World);
-        if (Input.GetKey(KeyCode.A))
-            mainCameraTransform.Translate(Vector3.left * .1f);
-        if (Input.GetKey(KeyCode.D))
-            mainCameraTransform.Translate(Vector3.right * .1f);
+        #if UNITY_EDITOR
+            if (Input.GetKey(KeyCode.W))
+                mainCameraTransform.Translate(Vector3.forward * .1f, Space.World);
+            if (Input.GetKey(KeyCode.S))
+                mainCameraTransform.Translate(Vector3.back * .1f, Space.World);
+            if (Input.GetKey(KeyCode.A))
+                mainCameraTransform.Translate(Vector3.left * .1f);
+            if (Input.GetKey(KeyCode.D))
+                mainCameraTransform.Translate(Vector3.right * .1f);
+        #endif
+
         var scroll = Input.mouseScrollDelta.y;
 
         if (scroll != 0)

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using K_PathFinder;
 using UnityEngine;
-using Random = UnityEngine.Random;
 using static GameController;
 
 public class Unit : CachedMonoBehaviour
@@ -43,6 +42,7 @@ public class Unit : CachedMonoBehaviour
     static readonly List<Unit> UnitsThatNeedRegularPathUpdate = new();
     [HideInInspector]
     public bool isPlayerUnit;
+    public Factory createdAtFactory;
 
     void Start()
     {
@@ -66,6 +66,8 @@ public class Unit : CachedMonoBehaviour
         unitCamera.SetActive(false);
 
         SetBottomToCenterDistance();
+
+        Init();
     }
 
     void FixedUpdate()  // TODO: Refactor / optimize when it's done. It will be executed heavily
@@ -80,34 +82,14 @@ public class Unit : CachedMonoBehaviour
         // laser.UpdateLaserProps();
     }
 
-    public static void GenerateSomeUnits()
+    void Init()
     {
-        for (int i = 0; i < 3; ++i)
-        {
-            var tank = Instantiate(gameController.tankPrefab);
-            var tankUnit = tank.GetComponent<Unit>();
-            tankUnit.transformCached.position = new Vector3(Random.value * 10, 3, Random.value * 10);
-            tankUnit.transformCached.eulerAngles = new Vector3(0, Random.value * 360, 0);
-            tankUnit.name = $"Tank{PlayerUnits.Count}";
-            tankUnit.isPlayerUnit = true;
-            PlayerUnits.Add(tankUnit);
-        }
+        var initialPosition = createdAtFactory.transformCached.position;
+        transformCached.position = new (initialPosition.x, 0, initialPosition.z);
+        transformCached.rotation = createdAtFactory.transformCached.rotation;
+        SetTarget(createdAtFactory.rallyPoint);
     }
 
-    public static void GenerateSomeEnemyUnits()
-    {
-        for (int i = 0; i < 1; ++i)
-        {
-            var tankEnemy = Instantiate(gameController.tankEnemyPrefab);
-            var tankEnemyUnit = tankEnemy.GetComponent<Unit>();
-            tankEnemyUnit.transformCached.position = new Vector3(Random.value * 10, 3, Random.value * 10);
-            tankEnemyUnit.transformCached.eulerAngles = new Vector3(0, Random.value * 360, 0);
-            tankEnemyUnit.name = $"TankEnemy{EnemyUnits.Count}";
-            tankEnemyUnit.isPlayerUnit = false;
-            EnemyUnits.Add(tankEnemyUnit);
-        }
-    }
-    
     void MoveToTarget()
     {
         if (_pathPoints.Count == 0) return;

@@ -2,8 +2,11 @@ using UnityEngine;
 
 public class CachedMonoBehaviour : MonoBehaviour
 {
+    [HideInInspector]
     public Transform transformCached;
+    [HideInInspector]
     public GameObject gameObjectCached;
+    [HideInInspector]
     public Rigidbody rigidBody;
 
     void Awake()
