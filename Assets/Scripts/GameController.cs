@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Android;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using static MiniMap;
@@ -15,6 +17,7 @@ public class GameController : MonoBehaviour
     public Texture minimapEnemyImage;
     public Texture minimapSelectedUnitImage;
     static GameObject _mainCamera;
+    static readonly Dictionary<string, Vector3> CameraZoomLimit = new () {{"minY", Vector3.up * 4}, {"maxY", Vector3.up * 40}};
     static Camera _mainCameraComponent;
     public static Transform mainCameraTransform;
     public static GameObject selectedObject;
@@ -22,7 +25,7 @@ public class GameController : MonoBehaviour
     static Unit _selectedObjectUnitComponent;
     static bool _moveUnit;
     static int _fixedFrameCount;
-    RaycastHit _selectionHit;
+    RaycastHit _raycastHit;
     static GameObject _overlayRenderTexture;
     static GameObject _unitCameraRenderTexture;
     public static bool updateHostilesInRange;
@@ -92,9 +95,9 @@ public class GameController : MonoBehaviour
             if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(0) &&
         #endif
 
-        Physics.Raycast(_mainCameraComponent.ScreenPointToRay(Input.mousePosition), out _selectionHit))
+        Physics.Raycast(_mainCameraComponent.ScreenPointToRay(Input.mousePosition), out _raycastHit))
         {
-            var collidedObject = _selectionHit.collider.gameObject;
+            var collidedObject = _raycastHit.collider.gameObject;
 
             // This affects what can be selected and targeted
             var unitTouched = collidedObject.CompareTag("Unit") || collidedObject.CompareTag("UnitEnemy");
@@ -110,7 +113,7 @@ public class GameController : MonoBehaviour
                         _selectedObjectUnitComponent.targetToShootAt = collidedObject;
                 }
                 else
-                    _selectedObjectUnitComponent.SetTarget(_selectionHit.point);
+                    _selectedObjectUnitComponent.SetTarget(_raycastHit.point);
 
                 SetMoveUnitState(false);
                 return;
@@ -127,6 +130,7 @@ public class GameController : MonoBehaviour
     void ProcessKeys()
     {
         #if UNITY_EDITOR
+            var scroll = Input.mouseScrollDelta.y;
             if (Input.GetKey(KeyCode.W))
                 mainCameraTransform.Translate(Vector3.forward * .1f, Space.World);
             if (Input.GetKey(KeyCode.S))
@@ -137,19 +141,31 @@ public class GameController : MonoBehaviour
                 mainCameraTransform.Translate(Vector3.right * .1f);
         #endif
 
-        var scroll = Input.mouseScrollDelta.y;
-
         if (scroll != 0)
         {
-            mainCameraTransform.Translate(Vector3.forward * scroll);
-            var position = mainCameraTransform.position;
-            var y = position.y;
-            y = Mathf.Clamp(y, 4, 40);
-            position = new Vector3(position.x, y, position.z);
-            mainCameraTransform.position = position;
+            var translateVector = mainCameraTransform.forward * scroll;
+            mainCameraTransform.Translate(translateVector, Space.World);
+
+            // Camera zoom clamp, simplified as fuck :D  (https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection)
+            var cameraPosition = mainCameraTransform.position;
+            var isLower = cameraPosition.y < CameraZoomLimit["minY"].y;
+            if (isLower || cameraPosition.y > CameraZoomLimit["maxY"].y)
+            {
+                var planePoint = isLower ? CameraZoomLimit["minY"] : CameraZoomLimit["maxY"];
+                mainCameraTransform.position = cameraPosition + translateVector * (planePoint - cameraPosition).y / translateVector.y;
+            }
+
+            // Physics.Raycast(cameraPosition, Vector3.down, out _raycastHit);
+            //
+            // if (cameraPosition.y - _raycastHit.point.y < CameraZoomLimit["minY"].y)
+            // {
+            //     var newCameraPosition = cameraPosition;
+            //     newCameraPosition.y = _raycastHit.point.y + CameraZoomLimit["minY"].y;
+            //     mainCameraTransform.position = newCameraPosition;
+            // }
         }
     }
-    
+
     static void SelectObject(GameObject obj)
     {
         if (Equals(selectedObject, obj)) return;
@@ -162,7 +178,7 @@ public class GameController : MonoBehaviour
         _selectedObjectUnitComponent = obj.GetComponent<Unit>();
         if (_selectedObjectUnitComponent)
         {
-            _selectedObjectUnitComponent.unitCamera.SetActive(true);
+            _selectedObjectUnitComponent.followCamera.SetActive(true);
 
             if (_selectedObjectUnitComponent.IsTargetADummy())
                 _selectedObjectUnitComponent.targetDummy.SetActive(true);
@@ -179,7 +195,7 @@ public class GameController : MonoBehaviour
 
         if (_selectedObjectUnitComponent)
         {
-            _selectedObjectUnitComponent.unitCamera.SetActive(false);
+            _selectedObjectUnitComponent.followCamera.SetActive(false);
             _selectedObjectUnitComponent.targetDummy.SetActive(false);
             _selectedObjectUnitComponent = null;
         }

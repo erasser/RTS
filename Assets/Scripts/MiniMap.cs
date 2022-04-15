@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
 using static GameController;
 using static Unit;
@@ -72,9 +73,19 @@ public class MiniMap : MonoBehaviour
 
     static void DrawUnitOnMap(GameObject unit, Texture texture)  // This could be probably declared in UpdateMap(). IDK if it's not redeclared many times there.
     {
-        var unitPosition = unit.transform.position;  // FIXME: ► Tady to padá po chvíli vytváření jednotek ("The object of type 'GameObject' has been destroyed but you are still trying to access it")
-        _mapEnemyRect.x = _mapSizeHalf.x + unitPosition.x * _mapRatio.x;
-        _mapEnemyRect.y = _mapSizeHalf.y - unitPosition.z * _mapRatio.y;
+        try
+        {
+            var unitPosition = unit.transform.position;  // FIXME: ► Tady to padá po chvíli vytváření jednotek ("The object of type 'GameObject' has been destroyed but you are still trying to access it")
+            
+            _mapEnemyRect.x = _mapSizeHalf.x + unitPosition.x * _mapRatio.x;
+            _mapEnemyRect.y = _mapSizeHalf.y - unitPosition.z * _mapRatio.y;
+        }
+        catch (Exception e)
+        {
+            print(unit);
+            print("Exception: " + e);
+        }
+
 
         DrawTexture(_mapEnemyRect, texture);
     }

@@ -254,7 +254,7 @@ MonoBehaviour:
   rigidBody: {fileID: 0}
   buildableUnitsPrefabs:
   - {fileID: 2412489413846082620, guid: f0b20fdd71b7c1a4294b8e0b51641a85, type: 3}
-  isPlayerUnit: 1
+  unitSide: 0
   rallyPoint: {x: 0, y: 0, z: 0}
 --- !u!114 &33744973
 MonoBehaviour:

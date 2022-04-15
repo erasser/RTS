@@ -1,13 +1,11 @@
-﻿Follow kameru udělat always vodorovnou
+﻿
+► POZOR! Jednotka jezdí i po střeše a navíc pěkně napiču :D
+
+► Fixnout FIXME v MiniMap.cs a v Unit.cs
 
 Přidat něco jako rally points grid, kam se budou kupit jednotky - optimálně by se mohlo generovat automaticky?
 
-Při max zoomu se kamera posouvá
-
 Implement creating of enemy units - try to use one prefab with different materials
-
-Test performance:  Equals vs ==
-(comparing GameObjects)
 
 Nyní může být objekt poslán k většímu objektu - upravit řešení vzdálenosti k targetu podle velikosti targetu. Pozor, týká se targetů typu Unit i dummyTarget. dummyTarget může být umístěň např. na budovu. Bude to asi chtít uložit tu hodnotu do proměnné při selectnutí targetu.
 Bude to chtít rozšířit volání metody o kliknutý objekt: _selectedObjectUnitComponent.SetTarget(_selectionHit.point, ...);
@@ -20,8 +18,7 @@ K čemu je dobrý layer Ground?
 
 Přenést hledání submodelů do editoru jako public pole - ponechat typ Transform
 
-► POZOR! Jednotka jezdí i po střeše a navíc pěkně napiču :D
-► Nejsou wheel collider trochu overkill? Přicházím také o možnost nastavit tření
+► Nejsou wheel collider trochu overkill? Přicházím také o možnost nastavit tření. Myslím, že jsem bez jsem to zkoušel a zasekávalo se to čumákem o kopec.
 
 ► Když jsem 2 jednotky targetil navzájem, chvíli to fungovalo, pak to spadlo
 

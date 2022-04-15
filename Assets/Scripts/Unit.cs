@@ -34,7 +34,8 @@ public class Unit : CachedMonoBehaviour
     HealthBar _armorBar;
     HealthBar _shieldBar;
     float _lastDamagedTime;    // Time, when unit was last damaged - serves to determine shield regeneration.
-    public GameObject unitCamera;
+    public GameObject followCamera;
+    Transform _followCameraTransform;
     /* pathfinding variables */
     PathFinderAgent _pathFinderAgent;
     Path _path;
@@ -47,7 +48,7 @@ public class Unit : CachedMonoBehaviour
     void Start()
     {
         _pathFinderAgent = gameObjectCached.GetComponent<PathFinderAgent>();
-        _pathFinderAgent.SetRecievePathDelegate(ReceivePathDelegate, AgentDelegateMode.ThreadSafe);  // ThreadSafe - executed in next update
+        _pathFinderAgent.SetRecievePathDelegate(ReceivePathDelegate /*, AgentDelegateMode.ThreadSafe*/);  // ThreadSafe - executed in next update
         rigidBody.centerOfMass = Vector3.down * .1f; // _rb.centerOfMass = new Vector3(0, -.1f, .1f);
         _initialDrag = rigidBody.drag;
         _initialAngularDrag = rigidBody.angularDrag;
@@ -62,8 +63,9 @@ public class Unit : CachedMonoBehaviour
         _statusInfoTransform = transformCached.Find("UnitStatus").transform;
         _armorBar = _statusInfoTransform.Find("armorBar").transform.GetComponent<HealthBar>();
         _shieldBar = _statusInfoTransform.Find("shieldBar").transform.GetComponent<HealthBar>();
-        unitCamera = cockpitTransform.Find("Camera3rdPerson").gameObject;
-        unitCamera.SetActive(false);
+        followCamera = cockpitTransform.Find("Camera3rdPerson").gameObject;
+        followCamera.SetActive(false);
+        _followCameraTransform = followCamera.transform;
 
         SetBottomToCenterDistance();
 
@@ -78,6 +80,7 @@ public class Unit : CachedMonoBehaviour
         MoveToTarget();
         AlignStatusInfo();
         RegenerateShield();
+        UpdateCameraTransform();
 
         // laser.UpdateLaserProps();
     }
@@ -296,7 +299,7 @@ public class Unit : CachedMonoBehaviour
     /// <param name="target">Unit to target</param>
     public void SetTarget(GameObject target)  // Unit is following another unit or a dummy target
     {
-        if (Equals(gameObject, target)) return;
+        if (Equals(gameObject, target) || Equals(_target, target)) return;
 
         _target = target;
         UnitsThatNeedRegularPathUpdate.Add(this);
@@ -486,8 +489,17 @@ public class Unit : CachedMonoBehaviour
         else
             EnemyUnits.Remove(this);
 
+        UnitsThatNeedRegularPathUpdate.Remove(this);
+
         Destroy(targetDummy);
         Destroy(gameObject);
+    }
+
+    void UpdateCameraTransform()
+    {
+        var eulerAngles = _followCameraTransform.eulerAngles;
+        eulerAngles.z = 0;
+        _followCameraTransform.eulerAngles = eulerAngles;
     }
 
     void FindPath(Vector3 targetPosition)
@@ -499,7 +511,18 @@ public class Unit : CachedMonoBehaviour
     public static void FindPaths()  // Called regularly, just for units that need it.
     {
         foreach (Unit unit in UnitsThatNeedRegularPathUpdate)
-            unit.FindPath(unit._target.transform.position);
+        {
+            try
+            {
+                unit.FindPath(unit._target.transform.position); // FIXME: ► Object reference not set to an instance of an object (Po pár vytvořených jednotkách)
+            }
+            catch (Exception e)
+            {
+                print(unit + unit.name);
+                print(unit._target);
+                print("Exception: " + e);
+            }
+        }
     }
 
     // If I understand it right, this is called when unit path is computed.

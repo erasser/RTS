@@ -9,13 +9,12 @@
 • LOD models (LOD Group component)
 • Mobile shader materials
 
-
 TEST PERFORMANCE
 ════════════════
 - InvokeRepeating vs. Coroutines vs. custom solution (time tracking) - https://forum.unity.com/threads/invokerepeating-vs-coroutines-performance.497208
-- Raycast
+- Raycast (vs. what? :D)
 - Vector3.magnitude vs. my SquareRoot.cs from Vector3.sqrMagnitude
-
+- Equals vs. ==  (comparing GameObjects)
 
 TESTS ON MOBILE
 ===============
