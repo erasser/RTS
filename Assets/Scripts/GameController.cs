@@ -133,8 +133,8 @@ public class GameController : MonoBehaviour
     void ProcessKeys()
     {
         // TODO: Set outer camera bounds
-        
-        // TODO: Zkusit zhroutit dohromady + zjednodušit
+
+        // TODO: Při zoomování nadoraz to trochu vibruje (na strmém kopci)
 
         var scroll = Input.mouseScrollDelta.y;
 
@@ -147,50 +147,49 @@ public class GameController : MonoBehaviour
             translateHorizontalVector = mainCameraTransform.forward;
             translateHorizontalVector.y = 0;
         }
-
         if (Input.GetKey(KeyCode.S))
         {
             translateHorizontalVector = mainCameraTransform.forward * -1;
             translateHorizontalVector.y = 0;
         }
-
         if (Input.GetKey(KeyCode.A))
             translateHorizontalVector = mainCameraTransform.right * -1;
         if (Input.GetKey(KeyCode.D))
             translateHorizontalVector = mainCameraTransform.right;
 
-        if (scroll == 0)
+        bool isCameraBelowLimit;
+        if (scroll == 0)  // camera pan only
         {
-            if (translateHorizontalVector.sqrMagnitude > 0)
+            if (translateHorizontalVector.x != 0 || translateHorizontalVector.z != 0)
             {
                 translateHorizontalVector = translateHorizontalVector.normalized * .1f;
-
                 mainCameraTransform.Translate(translateHorizontalVector, Space.World);
-
                 var cameraPosition = mainCameraTransform.position;
-                Physics.Raycast(new Vector3(cameraPosition.x, CameraZoomLimit["maxY"].y, cameraPosition.z), Vector3.down, out _raycastHit);
-
-                if (cameraPosition.y < _raycastHit.point.y + CameraZoomLimit["minY"].y)
-                    mainCameraTransform.position = _raycastHit.point + CameraZoomLimit["minY"]; // TODO: This is minY
+                var minY = GetCameraMinYLimit(cameraPosition, out isCameraBelowLimit);
+                if (isCameraBelowLimit)
+                    mainCameraTransform.position = minY;
             }
         }
-        else  // zooming
+        else  // camera zoom (+ pan)
         {
-            var translateZoomVector = mainCameraTransform.forward * scroll;
+            var translateZoomVector = mainCameraTransform.forward * scroll + translateHorizontalVector;  // translateHorizontalVector solves zoom + pan situation
             mainCameraTransform.Translate(translateZoomVector, Space.World);
-
-            var cameraPosition = mainCameraTransform.position; // TODO: opakuje se
-            Physics.Raycast(cameraPosition, Vector3.down, out _raycastHit); // TODO: opakuje se
-
-            var minY = _raycastHit.point + CameraZoomLimit["minY"]; // TODO: opakuje se
-
+            var cameraPosition = mainCameraTransform.position;
+            var minY = GetCameraMinYLimit(cameraPosition, out isCameraBelowLimit);
             // Camera zoom clamp, simplified as fuck :D  (https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection)
-            var isLower = cameraPosition.y < minY.y;
-            if (isLower || cameraPosition.y > CameraZoomLimit["maxY"].y)
+            if (isCameraBelowLimit || cameraPosition.y > CameraZoomLimit["maxY"].y)
             {
-                var planePoint = isLower ? minY : CameraZoomLimit["maxY"];
+                var planePoint = isCameraBelowLimit ? minY : CameraZoomLimit["maxY"];
                 mainCameraTransform.position = cameraPosition + translateZoomVector * (planePoint - cameraPosition).y / translateZoomVector.y;
             }
+        }
+
+        Vector3 GetCameraMinYLimit(Vector3 cameraPosition, out bool isLower)
+        {
+            Physics.Raycast(new Vector3(cameraPosition.x, CameraZoomLimit["maxY"].y, cameraPosition.z), Vector3.down, out _raycastHit);
+            var minY = _raycastHit.point + CameraZoomLimit["minY"];
+            isLower = cameraPosition.y < minY.y;
+            return minY;
         }
     }
 
