@@ -26,7 +26,7 @@ public class GameController : MonoBehaviour
     static Unit _selectedObjectUnitComponent;
     static bool _moveUnit;
     static int _fixedFrameCount;
-    RaycastHit _raycastHit;
+    RaycastHit _raycastHitFromCursor, _raycastHitBelowCamera;
     static GameObject _overlayRenderTexture;
     static GameObject _unitCameraRenderTexture;
     public static bool updateHostilesInRange;
@@ -73,7 +73,7 @@ public class GameController : MonoBehaviour
 
         updateHostilesInRange = _fixedFrameCount % 5 == 0;  // Moved here from Unit.cs, so it's not calculated for every unit
 
-        if (_fixedFrameCount % 10 == 0)
+        if (_fixedFrameCount % 4 == 0)
             FindPaths();
 
         // if (!selectedObject) return;  // TODO: Remove
@@ -98,9 +98,9 @@ public class GameController : MonoBehaviour
             if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began && !EventSystem.current.IsPointerOverGameObject(0) &&
         #endif
 
-        Physics.Raycast(_mainCameraComponent.ScreenPointToRay(Input.mousePosition), out _raycastHit))
+        Physics.Raycast(_mainCameraComponent.ScreenPointToRay(Input.mousePosition), out _raycastHitFromCursor))
         {
-            var collidedObject = _raycastHit.collider.gameObject;
+            var collidedObject = _raycastHitFromCursor.collider.gameObject;
 
             // This affects what can be selected and targeted
             var unitTouched = collidedObject.CompareTag("Unit") || collidedObject.CompareTag("UnitEnemy");
@@ -116,7 +116,7 @@ public class GameController : MonoBehaviour
                         _selectedObjectUnitComponent.targetToShootAt = collidedObject;
                 }
                 else
-                    _selectedObjectUnitComponent.SetTarget(_raycastHit.point);
+                    _selectedObjectUnitComponent.SetTarget(_raycastHitFromCursor.point);
 
                 SetMoveUnitState(false);
                 return;
@@ -134,12 +134,8 @@ public class GameController : MonoBehaviour
     {
         // TODO: Set outer camera bounds
 
-        // TODO: Při zoomování nadoraz to trochu vibruje (na strmém kopci)
-
         var scroll = Input.mouseScrollDelta.y;
-
         if (!Input.GetKey(KeyCode.W) && !Input.GetKey(KeyCode.S) && !Input.GetKey(KeyCode.A) && !Input.GetKey(KeyCode.D) && scroll == 0) return;
-
         Vector3 translateHorizontalVector = new();
 
         if (Input.GetKey(KeyCode.W))
@@ -173,8 +169,10 @@ public class GameController : MonoBehaviour
         else  // camera zoom (+ pan)
         {
             var translateZoomVector = mainCameraTransform.forward * scroll + translateHorizontalVector;  // translateHorizontalVector solves zoom + pan situation
-            mainCameraTransform.Translate(translateZoomVector, Space.World);
             var cameraPosition = mainCameraTransform.position;
+            GetCameraMinYLimit(cameraPosition, out isCameraBelowLimit);
+            if (isCameraBelowLimit) return;
+            mainCameraTransform.Translate(translateZoomVector, Space.World);
             var minY = GetCameraMinYLimit(cameraPosition, out isCameraBelowLimit);
             // Camera zoom clamp, simplified as fuck :D  (https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection)
             if (isCameraBelowLimit || cameraPosition.y > CameraZoomLimit["maxY"].y)
@@ -186,9 +184,10 @@ public class GameController : MonoBehaviour
 
         Vector3 GetCameraMinYLimit(Vector3 cameraPosition, out bool isLower)
         {
-            Physics.Raycast(new Vector3(cameraPosition.x, CameraZoomLimit["maxY"].y, cameraPosition.z), Vector3.down, out _raycastHit);
-            var minY = _raycastHit.point + CameraZoomLimit["minY"];
-            isLower = cameraPosition.y < minY.y;
+            var minY = CameraZoomLimit["minY"];
+            if (Physics.Raycast(new Vector3(cameraPosition.x, CameraZoomLimit["maxY"].y, cameraPosition.z), Vector3.down, out _raycastHitBelowCamera))
+                minY += _raycastHitBelowCamera.point;
+            isLower = cameraPosition.y <= minY.y;
             return minY;
         }
     }
