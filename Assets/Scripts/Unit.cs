@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using K_PathFinder;
+using UnityEditor.PackageManager;
 using UnityEngine;
 using static GameController;
 
@@ -8,9 +9,9 @@ public class Unit : CachedMonoBehaviour
 {
     [Range(1, 1000)]
     public float speed = 150;
-    static float _higherSpeedCoefficient = 1.3f;
+    // static float _higherSpeedCoefficient = 1.3f;
     static int _hostileSqrDistanceLimit = 20;
-    bool _isOnGround;
+    public bool isStayingOnSomething;
     bool _isOnUnit;
     float _bottomToCenterDistance;  // TODO: Implement for UpdateIsOnGround() method
     GameObject _target;  // TODO: Should be placed on the ground to correctly detect, when the target is reached
@@ -44,6 +45,7 @@ public class Unit : CachedMonoBehaviour
     [HideInInspector]
     public bool isPlayerUnit;
     public Factory createdAtFactory;
+    public float halfHeight;  // Half of unity model Y dimension
 
     void Start()
     {
@@ -66,15 +68,18 @@ public class Unit : CachedMonoBehaviour
         followCamera = cockpitTransform.Find("Camera3rdPerson").gameObject;
         followCamera.SetActive(false);
         _followCameraTransform = followCamera.transform;
+        halfHeight = transform.Find("groundLevel").localPosition.y / -2 + .1f;  // A bit more than a half, because it's also used to position a bit above the ground
+        /***  Initial transform @ target  ***/
+        SetTarget(createdAtFactory.rallyPoint);
 
-        SetBottomToCenterDistance();
-
-        Init();
+        Physics.Raycast(createdAtFactory.transformCached.position, Vector3.down, out RaycastHit hit, Mathf.Infinity, gameController.groundLayer);
+        transformCached.position = hit.point + Vector3.up * halfHeight;
+        transformCached.rotation = createdAtFactory.transformCached.rotation;
     }
 
     void FixedUpdate()  // TODO: Refactor / optimize when it's done. It will be executed heavily
     {
-        if (updateHostilesInRange)  // Update every nth frame
+        if (updateHostilesInRange)
             UpdateHostilesInRange();
 
         MoveToTarget();
@@ -85,21 +90,12 @@ public class Unit : CachedMonoBehaviour
         // laser.UpdateLaserProps();
     }
 
-    void Init()
-    {
-        var initialPosition = createdAtFactory.transformCached.position;
-        transformCached.position = new (initialPosition.x, 0, initialPosition.z);
-        transformCached.rotation = createdAtFactory.transformCached.rotation;
-        SetTarget(createdAtFactory.rallyPoint);
-    }
-
     void MoveToTarget()
     {
+        UpdateIsStayingOnSomething();
+        if (!isStayingOnSomething) return;
+
         if (_pathPoints.Count == 0) return;
-
-        UpdateIsOnGround();
-
-        if (!_isOnGround && !_isOnUnit) return;  // TODO: Remove, when units are initially placed on the ground (now they are dropped)
 
         // TODO: ► FIX: On down slope, unit is heading a bit to right. On up slope, unit is heading a bit to left. 
 
@@ -117,7 +113,7 @@ public class Unit : CachedMonoBehaviour
         /***  Movement  ***/        
         var toTargetSqrMagnitude = toTargetDirection.sqrMagnitude;
 
-        // TODO: Marge toTargetSqrMagnitude with declaration if "Slow down when near to target" is not used
+        // TODO: Merge toTargetSqrMagnitude with declaration if "Slow down when near to target" is not used
         if (CheckTargetReached(toTargetSqrMagnitude))  // Also unsets target
         {
             // if (_isOnUnit)
@@ -194,8 +190,6 @@ public class Unit : CachedMonoBehaviour
 
         var targetReached = toTargetSqrMagnitude < distanceLimit;
 
-        // if (_pathPoints.Count)
-
         if (targetReached)
         {
             _pathPoints.RemoveAt(0);  // Delete the reached point from stack
@@ -207,60 +201,24 @@ public class Unit : CachedMonoBehaviour
         return targetReached;
     }
 
-    void SetBottomToCenterDistance()
+    /// <summary>
+    /// Updates only when having a path
+    /// </summary>
+    void UpdateIsStayingOnSomething()
     {
-        // _bottomToCenterDistance = GetComponent<MeshFilter>().sharedMesh.bounds.extents.y;  // extents are half of bounds
-    }
-    
-    void UpdateIsOnGround()
-    {
-        if (Physics.Raycast(transformCached.position, - transformCached.up, out RaycastHit groundHit, gameController.groundLayer))
+        if (Physics.Raycast(transformCached.position, - transformCached.up, out RaycastHit hit) && hit.distance < halfHeight)
         {
-            if (groundHit.distance < .3f)
-            {
-                SetIsOnGround(true);
-                return;
-            }
+            #if UNITY_EDITOR  // Leave it here forever
+                if (hit.collider.gameObject == gameObject)  // For debug
+                    Debug.LogWarning("Unit.cs::UpdateIsStayingOnSomething(): Object cast itself. Add a condition here.");
+            #endif
+
+            SetIsStayingOnSomething(true);
+            return;
         }
 
         // ground not hit or too far
-        SetIsOnGround(false);
-    }
-
-    // Not used
-    // TODO: ► What if collides with more that one unit? Maybe use OnCollisionStays() instead.
-    void OnCollisionEnter(Collision other)
-    {
-        if (other.gameObject.CompareTag("Unit") || other.gameObject.CompareTag("UnitEnemy"))
-        {
-            // other.gameObject.GetComponent<Rigidbody>().mass = 1000;  // other.rigidbody exists, no need for GetComponent
-            // print("on unit!");
-            SetIsOnUnit(true);
-            speed *= _higherSpeedCoefficient;
-        }
-    }
-
-    // Not used
-    void OnCollisionExit(Collision other)
-    {
-        if (other.gameObject.CompareTag("Unit") || other.gameObject.CompareTag("UnitEnemy"))
-        {
-            // other.gameObject.GetComponent<Rigidbody>().mass = 300;
-            // print("not on unit!");
-            SetIsOnUnit(false);
-            speed /= _higherSpeedCoefficient;
-            // _moveAfterFinishedOnTopOfAnotherUnit = false;
-        }
-    }
-
-    private void OnCollisionStay(Collision other)
-    {
-        // if (other.gameObject.CompareTag("Unit"))
-        // {
-        //     print("Applying another unit push");
-        //     // This will push both colliding units
-        //     other.rigidbody.AddForce((other.rigidbody.position - transform.position).normalized * 200, ForceMode.Impulse);
-        // }
+        SetIsStayingOnSomething(false);
     }
 
     void SetIsOnUnit(bool onUnit)
@@ -270,26 +228,30 @@ public class Unit : CachedMonoBehaviour
         ToggleDrags(onUnit);
     }
 
-    public void SetIsOnGround(bool onGround)
+    public void SetIsStayingOnSomething(bool onGround)
     {
-        if (_isOnGround == onGround) return;
+        if (isStayingOnSomething == onGround) return;
 
         ToggleDrags(onGround);
+
+        transform.Find("debugSphere").gameObject.GetComponent<MeshRenderer>().enabled = !isStayingOnSomething;  // For debug
     }
 
     void ToggleDrags(bool enable)
     {
         if (enable)
         {
-            _isOnGround = true;
+            isStayingOnSomething = true;
             rigidBody.drag = _initialDrag;
             rigidBody.angularDrag = _initialAngularDrag;
         }
         else
-        {
-            _isOnGround = false;
+        {  // TODO: ► Zde jsem skončil. Je třeba rozlišit leh na zádech a let. Přejmenovat "enable" parametr.
+            isStayingOnSomething = false;
             rigidBody.drag = 0;
             rigidBody.angularDrag = 0;
+            // rigidBody.drag = 20;
+            // rigidBody.angularDrag = 20;
         }
     }
 

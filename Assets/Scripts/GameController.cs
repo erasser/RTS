@@ -26,7 +26,7 @@ public class GameController : MonoBehaviour
     static Unit _selectedObjectUnitComponent;
     static bool _moveUnit;
     static int _fixedFrameCount;
-    RaycastHit _raycastHitFromCursor, _raycastHitBelowCamera;
+    static RaycastHit _raycastHitFromCursor, _raycastHitBelowCamera;
     static GameObject _overlayRenderTexture;
     static GameObject _unitCameraRenderTexture;
     public static bool updateHostilesInRange;
@@ -63,6 +63,7 @@ public class GameController : MonoBehaviour
         Performance.ShowFPS();
         ProcessTouch();
         #if UNITY_EDITOR
+            ProcessDesktopCameraControls();
             ProcessKeys();
         #endif
     }
@@ -130,7 +131,7 @@ public class GameController : MonoBehaviour
         }
     }
 
-    void ProcessKeys()
+    static void ProcessDesktopCameraControls()
     {
         // TODO: Set outer camera bounds
 
@@ -192,6 +193,12 @@ public class GameController : MonoBehaviour
         }
     }
 
+    static void ProcessKeys()
+    {
+        if (Input.GetKeyDown("m"))
+            ProcessMoveButton();
+    }
+
     static void SelectObject(GameObject obj)
     {
         if (Equals(selectedObject, obj)) return;
@@ -230,11 +237,11 @@ public class GameController : MonoBehaviour
         SetMoveUnitState(false);
     }
 
-    void ProcessMoveButton()
+    static void ProcessMoveButton()
     {
         if (!selectedObject || selectedObject.CompareTag("Building")) return;
 
-        SetMoveUnitState(true);
+        SetMoveUnitState(!_moveUnit);
     }
 
     static void SetMoveUnitState(bool moveUnit)
